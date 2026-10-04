@@ -40,7 +40,8 @@
   }
 
   /* ---------- Scene ---------- */
-  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  html, body { overscroll-behavior: none; }
   #scene .face { stroke: none; }
   #scene .edge { fill: none; stroke: var(--blue); stroke-width: 1; stroke-linejoin: round; }
   #scene .wedge { fill: none; stroke: var(--blue); stroke-width: 0.022; }
@@ -565,7 +566,7 @@
   // ----- phone tilt pans the room -----
   // Tilting left/right pans sideways (forward/back adds a little vertical). Whatever angle the phone is
   // held at becomes "centre", and that neutral point slowly follows the hand so the view never gets stuck.
-  let tiltBase = null, tiltLive = false;
+  let tiltBase = null, tiltLive = false, tx = 0, ty = 0, dragX = 0, dragY = 0;
   const onTilt = e => {
     if (e.gamma == null || e.beta == null) return;
     // map to screen axes, so it also works with the phone held landscape
@@ -576,8 +577,9 @@
     if (!tiltBase) tiltBase = { lr, fb };
     tiltBase.lr += (lr - tiltBase.lr) * .004;   // slow re-centre
     tiltBase.fb += (fb - tiltBase.fb) * .004;
-    mx = clamp((lr - tiltBase.lr) / 24, -.5, .5);
-    my = clamp((fb - tiltBase.fb) / 30, -.5, .5);
+    tx = clamp((lr - tiltBase.lr) / 36, -.5, .5);
+    ty = clamp((fb - tiltBase.fb) / 48, -.5, .5);
+    mx = clamp(tx + dragX, -.6, .6); my = clamp(ty + dragY, -.6, .6);
     if (!tiltLive) { tiltLive = true; document.body.classList.add('tilt'); }
   };
   addEventListener('deviceorientation', onTilt);
@@ -588,6 +590,24 @@
     removeEventListener('touchend', askTilt);
   };
   addEventListener('touchend', askTilt);
+
+  // ----- drag to pan: works everywhere, no permission needed -----
+  let drag = null;
+  svg.addEventListener('touchstart', e => {
+    const p = e.touches[0];
+    drag = { x: p.clientX, y: p.clientY, bx: dragX, by: dragY, moved: false };
+  }, { passive: true });
+  svg.addEventListener('touchmove', e => {
+    if (!drag) return;
+    const p = e.touches[0], dx = p.clientX - drag.x, dy = p.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 8) drag.moved = true;
+    // dragging right reveals more of the left of the room, like moving the view by hand
+    dragX = clamp(drag.bx - dx / (vw * 1.2), -.5, .5);
+    dragY = clamp(drag.by - dy / (vh * 1.6), -.4, .4);
+    mx = clamp(tx + dragX, -.6, .6); my = clamp(ty + dragY, -.6, .6);
+  }, { passive: true });
+  svg.addEventListener('touchend', () => { if (drag && drag.moved) suppressClick = performance.now(); drag = null; }, { passive: true });
+  let suppressClick = 0;
   let doorTarget = 0, doorOpen = 0;
   for (const n of [$('door'), $('cta')]) {
     n.addEventListener('pointerenter', () => doorTarget = 1);
@@ -608,7 +628,10 @@
   const seek = ms => { start = performance.now() - ms / rate; };
   if (reduce) seek(T.end + 2000);
   const skip = () => { if (performance.now() - start < T.end) seek(T.end); };
-  svg.addEventListener('click', e => { if (!e.target.closest('#door, .callout')) skip(); });
+  svg.addEventListener('click', e => {
+    if (performance.now() - suppressClick < 350) { e.preventDefault(); e.stopPropagation(); return; }
+    if (!e.target.closest('#door, .callout')) skip();
+  }, true);
   addEventListener('keydown', e => { if (e.key === 'Escape') skip(); });
 
   const flags = {};
@@ -627,7 +650,7 @@
     sx += (mx - sx) * .05; sy += (my - sy) * .05;
     C = {};
     for (const k in K1) C[k] = lerp(K0[k], K1[k], pc);
-    const pan = tiltLive ? 1.9 : 1;  // tilt gets a wider pan than the mouse
+    const pan = compact ? 1.35 : 1;  // phones get a slightly wider pan than the mouse
     C.x += sx * 0.7 * pan * settled; C.y -= sy * 0.45 * pan * settled;
     const zf = C.z - NEAR;
 
