@@ -111,15 +111,32 @@
     background: var(--blue); transform: scaleX(var(--prog, 0)); transform-origin: left;
   }
   footer .links { display: flex; gap: 22px; align-items: center; }
-  footer a.alt { color: var(--blue); text-decoration: none; }
   #replay { background: none; border: 0; color: var(--blue); font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; display: flex; gap: 8px; align-items: center; }
   #replay svg { width: 13px; height: 13px; }
 
-  /* compact layout: menu becomes a row, the door CTA docks above the footer */
-  .compact .menu { top: auto !important; left: 16px !important; right: 16px; bottom: 56px; flex-direction: row; flex-wrap: wrap; gap: 2px 4px; }
+  /* compact layout (phones): menu becomes a 2×2 grid of large buttons, CTA becomes a full-width bar */
+  .compact .menu { top: auto !important; left: 16px !important; right: 16px; bottom: 54px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .compact .menu .label { display: none; }
-  .compact .menu a { --menu-size: 13px; padding: 7px 10px; gap: 8px; }
-  .compact #cta { left: 16px !important; top: auto !important; bottom: 132px; }
+  .compact .menu a {
+    --menu-size: 15px; min-height: 50px; padding: 0 14px; gap: 10px; align-items: center;
+    background: rgba(255,255,255,.92); box-shadow: inset 0 0 0 1.5px rgba(31,92,255,.45);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .compact .menu a::before { transform: skewX(0) scaleX(0); }
+  .compact .menu a::after { transform: scaleX(1); }
+  .compact.menu-in .menu a::after { transform: scaleX(0); }
+  .compact .menu a:active { color: #fff; }
+  .compact .menu a:active .n { color: #fff; }
+  .compact .menu a:active::before { transform: skewX(0) scaleX(1); transition-duration: .12s; }
+  .compact .menu a .n { font-size: 12px; }
+  .compact #cta { left: 16px !important; right: 16px; top: auto !important; bottom: 170px; height: 54px; font-size: 13px; -webkit-tap-highlight-color: transparent; }
+  .compact #cta span { flex: 1; display: flex; align-items: center; justify-content: center; transform: none; padding: 0 16px; }
+  .compact #cta span b { transform: none; }
+  .compact #cta i { display: flex; align-items: center; justify-content: center; width: 58px; transform: none; font-size: 18px; padding: 0; }
+  .compact #cta:active span { background: var(--blue); }
+  .compact .callout text { font-size: 12.5px; }
+  .compact footer.bar { height: 44px; }
+  .compact #replay { padding: 10px 0 10px 12px; }
 </style>
 </head>
 <body>
@@ -219,7 +236,6 @@
   <footer class="bar">
     <span>© Four40 Renovations</span>
     <span class="links">
-    <a class="alt" href="3d/">3D version</a>
     <button id="replay" type="button" aria-label="Replay intro animation">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
       Replay
@@ -280,7 +296,7 @@
     const portrait = vw / vh < 0.9;
     if (portrait) {
       // fit the room between the logo strip and the bottom UI (band, CTA, menu row, footer)
-      const f = Math.max(200, Math.min(0.86 * vw, (vh - 342) / 1.065));
+      const f = Math.max(150, Math.min(0.86 * vw, (vh - 372) / 1.065));
       K1 = { x: 0.6, y: 2.6, z: 11, f, px: 0.5 * vw, py: 92 + 0.255 * f };
       K0 = { x: 0, y: H / 2, z: 20, f: f * 1.1, px: 0.5 * vw, py: 0.45 * vh };
     } else {
@@ -442,11 +458,13 @@
       o.cl = {
         a,
         line: el('polyline', { pathLength: 1, 'stroke-dasharray': 1, 'stroke-dashoffset': 1 }, a),
+        hit: el('rect', { fill: 'transparent' }, a),
         dot: el('circle', { r: 2.5 }, a),
         text: el('text', {}, a),
       };
       el('tspan', { class: 'idx' }, o.cl.text).textContent = o.label[0] + '  ';
       el('tspan', {}, o.cl.text).textContent = o.label[1];
+      el('tspan', { class: 'idx' }, o.cl.text).textContent = '  →';
       o.cl.w = 0;
     }
   });
@@ -471,6 +489,9 @@
         from: { x: 0.65 * vw, y: 0.75 * vh, a: -42 },
         to: portrait ? { x: 0.6 * vw, y: 58, a: -10, par: 30 } : { x: 0.52 * vw, y: 0.02 * vh, a: -14, par: 45 } },
     ];
+    // portrait: no bottom band — that space goes to the buttons
+    $('bandA').style.display = portrait ? 'none' : '';
+    if (portrait) BANDS = BANDS.filter(b => b.key !== 'A');
     for (const b of BANDS) {
       b.g = $('band' + b.key); b.run = b.g.querySelector('.run');
       const r = b.g.querySelector('rect'), tx = b.g.querySelector('text');
@@ -660,21 +681,27 @@
     for (const o of OBJECTS) {
       if (!o.cl || o.hidden) { o.cl && o.cl.a.setAttribute('opacity', 0); continue; }
       const kc = prog(t, [o.at + 350, o.at + 800]);
-      const below = o.rise < 0;
-      const an = P(o.x, below ? -0.04 : o.h + 0.12, o.z);
+      // labels may not run into the bottom controls; a label that would gets flipped above its piece
+      const maxY = compact ? vh - 232 : vh - 48;
+      let below = o.rise < 0 && P(o.x, 0, o.z)[1] - o.rise + 22 < maxY;
+      let an = P(o.x, below ? -0.04 : o.h + 0.12, o.z);
       const L = (o.cl.w || 90) + 14;
       let dir = o.dir;
       const reach = an[0] + dir * (20 + L);
       if (reach < 6 || reach > vw - 6) dir = -dir;
-      let ly = an[1] - o.rise;
+      let ly = below || o.rise >= 0 ? an[1] - o.rise : an[1] - 20;
       const box = () => { const x0 = an[0] + dir * 20, x1 = x0 + dir * L; return [Math.min(x0, x1), Math.max(x0, x1), ly - (below ? 2 : 18), ly + (below ? 18 : 2)]; };
       for (let pass = 0; pass < 6; pass++) {
         const b = box();
         const hit = placed.find(q => b[0] < q[1] && b[1] > q[0] && b[2] < q[3] && b[3] > q[2]);
         if (!hit) break;
         ly = below ? hit[3] + 4 + (ly - b[2]) : hit[2] - 4 - (b[3] - ly);
+        if (below && box()[3] > maxY) { below = false; an = P(o.x, o.h + 0.12, o.z); ly = an[1] - 20; }
       }
-      placed.push(box());
+      const hb = box();
+      placed.push(hb);
+      o.cl.hit.setAttribute('x', hb[0] - 8); o.cl.hit.setAttribute('width', hb[1] - hb[0] + 16);
+      o.cl.hit.setAttribute('y', hb[2] - 10); o.cl.hit.setAttribute('height', hb[3] - hb[2] + 20);
       const p1 = [an[0] + dir * 20, ly], p2 = [p1[0] + dir * L, ly];
       o.cl.line.setAttribute('points', pts([an, p1, p2]));
       o.cl.line.setAttribute('stroke-dashoffset', 1 - easeInOut(kc));
