@@ -65,23 +65,26 @@
     .compact #hero { animation-name: none; }
   }
   /* the wash is a fixed, timed sequence: triggered once on the way down, reversed on the way back up */
-  .wash-in #wash  { animation: washUp .95s cubic-bezier(.65, 0, .35, 1) both; }
-  .wash-out #wash { animation: washDown .95s cubic-bezier(.65, 0, .35, 1) both; }
-  .wash-in #veil  { opacity: .92; transition: opacity .25s linear .42s; }
-  .wash-out #veil { opacity: 0;   transition: opacity .25s linear .42s; }
+  .wash-in #wash  { animation: washUp 1.3s cubic-bezier(.65, 0, .35, 1) both; }
+  .wash-out #wash { animation: washDown 1.3s cubic-bezier(.65, 0, .35, 1) both; }
+  .wash-in #veil  { opacity: .92; transition: opacity .3s linear .55s; }
+  .wash-out #veil { opacity: 0;   transition: opacity .3s linear .55s; }
   @keyframes washUp   { from { transform: translate3d(0, 130%, 0); } to { transform: translate3d(0, -130%, 0); } }
   @keyframes washDown { from { transform: translate3d(0, -130%, 0); } to { transform: translate3d(0, 130%, 0); } }
   @keyframes heroBack { 0% { transform: translate3d(0, 0, 0) scale(1); } 85%, 100% { transform: translate3d(0, 2vh, 0) scale(.9); } }
   /* phones: no live blur behind the footer (the moving wash would be re-blurred every frame) */
   .compact .site { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(255, 255, 255, .9); }
   /* clean blue wipe that washes up over the room as the footer arrives, then carries on out of view */
+  /* one pre-drawn GPU layer that only ever moves: the slant is a skew baked into the layer, not a clip mask,
+     so nothing is repainted while it animates */
   #wash {
     position: absolute; left: 0; right: 0; top: -14%; height: 128%; z-index: 5; pointer-events: none;
-    background: linear-gradient(180deg, #3570ff 0%, #1f5cff 40%, #1546e0 100%);
-    clip-path: polygon(0 7%, 100% 0, 100% 93%, 0 100%);
-    transform: translate3d(0, 130%, 0); will-change: transform;
+    transform: translate3d(0, 130%, 0); will-change: transform; backface-visibility: hidden;
   }
-  #wash::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 9%; background: linear-gradient(180deg, rgba(255,255,255,.35), transparent); clip-path: polygon(0 78%, 100% 0, 100% 22%, 0 100%); }
+  #wash .fill {
+    position: absolute; left: -2%; right: -2%; top: 0; bottom: 0; transform: skewY(-4deg);
+    background: linear-gradient(180deg, #4a7dff 0%, #2a63ff 4%, #1f5cff 40%, #1546e0 100%);
+  }
 
   /* ---------- Scene ---------- */
   #scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
@@ -355,7 +358,7 @@
   </footer>
 </div>
 <div id="veil" aria-hidden="true"></div>
-<div id="wash" aria-hidden="true"></div>
+<div id="wash" aria-hidden="true"><div class="fill"></div></div>
 </div>
 
 <footer class="site" id="site-footer">
@@ -1062,14 +1065,17 @@
   addEventListener('resize', () => { footerH = siteFooter.offsetHeight; });
   // one style write per frame, transforms/opacity only (GPU-composited, no layout or repaint)
   const nativeScrollFx = CSS.supports && CSS.supports('animation-timeline: scroll()');
-  let washState = 'idle';
+  let washState = 'idle', lastScrollY = scrollY;
   const applyScroll = () => {
     scrollQueued = false;
     collapse = clamp(scrollY / (footerH * .85));
     // timed wash: plays its full sequence once scrolling starts, reverses when back at the top
-    const down = scrollY > 40, top = scrollY < 12;
-    if (down && washState !== 'in') { washState = 'in'; hero.classList.remove('wash-out'); void washEl.offsetWidth; hero.classList.add('wash-in'); }
-    else if (top && washState === 'in') { washState = 'out'; hero.classList.remove('wash-in'); void washEl.offsetWidth; hero.classList.add('wash-out'); }
+    // in: on the way down past 40px. out: as soon as you head back up past the middle of the footer,
+    // so the room is uncovered by the time it comes back into view
+    const y = scrollY, goingUp = y < lastScrollY;
+    lastScrollY = y;
+    if (y > 40 && !goingUp && washState !== 'in') { washState = 'in'; hero.classList.remove('wash-out'); void washEl.offsetWidth; hero.classList.add('wash-in'); }
+    else if (washState === 'in' && (y < 12 || (goingUp && y < footerH * .55))) { washState = 'out'; hero.classList.remove('wash-in'); void washEl.offsetWidth; hero.classList.add('wash-out'); }
     if (nativeScrollFx) return;   // CSS scroll timeline drives the card scale; we only need `collapse` to pause the room
     hero.style.transform = `translate3d(0, ${(collapse * 2).toFixed(3)}vh, 0) scale(${(1 - collapse * .1).toFixed(4)})`;
     // wash: rises from below, covers the room mid-way, then wipes off the top; the room stays faded behind the glass
