@@ -555,10 +555,32 @@
   // ---------- interaction ----------
   let mx = 0, my = 0, sx = 0, sy = 0;
   addEventListener('pointermove', e => { mx = e.clientX / vw - .5; my = e.clientY / vh - .5; });
-  addEventListener('deviceorientation', e => {
-    if (e.gamma == null) return;
-    mx = clamp(e.gamma / 40, -.5, .5); my = clamp((e.beta - 45) / 40, -.5, .5);
-  });
+  // ----- phone tilt pans the room -----
+  // Tilting left/right pans sideways (forward/back adds a little vertical). Whatever angle the phone is
+  // held at becomes "centre", and that neutral point slowly follows the hand so the view never gets stuck.
+  let tiltBase = null, tiltLive = false;
+  const onTilt = e => {
+    if (e.gamma == null || e.beta == null) return;
+    // map to screen axes, so it also works with the phone held landscape
+    const ang = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    let lr = e.gamma, fb = e.beta;
+    if (ang === 90) { lr = e.beta; fb = -e.gamma; }
+    else if (ang === -90 || ang === 270) { lr = -e.beta; fb = e.gamma; }
+    if (!tiltBase) tiltBase = { lr, fb };
+    tiltBase.lr += (lr - tiltBase.lr) * .004;   // slow re-centre
+    tiltBase.fb += (fb - tiltBase.fb) * .004;
+    mx = clamp((lr - tiltBase.lr) / 24, -.5, .5);
+    my = clamp((fb - tiltBase.fb) / 30, -.5, .5);
+    if (!tiltLive) { tiltLive = true; document.body.classList.add('tilt'); }
+  };
+  addEventListener('deviceorientation', onTilt);
+  // iOS only grants motion access from a tap
+  const askTilt = () => {
+    const D = window.DeviceOrientationEvent;
+    if (D && typeof D.requestPermission === 'function') D.requestPermission().catch(() => {});
+    removeEventListener('touchend', askTilt);
+  };
+  addEventListener('touchend', askTilt);
   let doorTarget = 0, doorOpen = 0;
   for (const n of [$('door'), $('cta')]) {
     n.addEventListener('pointerenter', () => doorTarget = 1);
@@ -598,7 +620,8 @@
     sx += (mx - sx) * .05; sy += (my - sy) * .05;
     C = {};
     for (const k in K1) C[k] = lerp(K0[k], K1[k], pc);
-    C.x += sx * 0.7 * settled; C.y -= sy * 0.45 * settled;
+    const pan = tiltLive ? 1.9 : 1;  // tilt gets a wider pan than the mouse
+    C.x += sx * 0.7 * pan * settled; C.y -= sy * 0.45 * pan * settled;
     const zf = C.z - NEAR;
 
     // ----- right wall: flash, then slide open (away from the room) -----
