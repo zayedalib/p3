@@ -57,6 +57,25 @@
     transform-origin: 50% 0; will-change: transform; transform: translateZ(0);
   }
   #veil { position: absolute; inset: 0; z-index: 4; pointer-events: none; background: #f1f5fc; opacity: 0; will-change: opacity; }
+
+  /* Scroll-linked effects run on the browser's compositor when supported (smooth during iOS momentum scrolling).
+     The page's scroll range is exactly the footer's height, so percentages below are "how far the footer is up". */
+  @supports (animation-timeline: scroll()) {
+    #wash, #veil, #hero { animation-timeline: scroll(root block); animation-fill-mode: both; animation-duration: 1ms; }
+    #wash { animation-name: washUp; }
+    #veil { animation-name: veilIn; }
+    #hero { animation-name: heroBack; animation-timing-function: linear; }
+    .compact #hero { animation-name: none; }
+  }
+  @keyframes washUp {
+    0%   { transform: translate3d(0, 130%, 0); animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
+    78%  { transform: translate3d(0, -130%, 0); }
+    100% { transform: translate3d(0, -130%, 0); }
+  }
+  @keyframes veilIn { 0% { opacity: 0; } 40% { opacity: .05; } 56% { opacity: .92; } 100% { opacity: 1; } }
+  @keyframes heroBack { 0% { transform: translate3d(0, 0, 0) scale(1); } 85%, 100% { transform: translate3d(0, 2vh, 0) scale(.9); } }
+  /* phones: no live blur behind the footer (the moving wash would be re-blurred every frame) */
+  .compact .site { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(255, 255, 255, .9); }
   /* clean blue wipe that washes up over the room as the footer arrives, then carries on out of view */
   #wash {
     position: absolute; left: 0; right: 0; top: -14%; height: 128%; z-index: 5; pointer-events: none;
@@ -221,11 +240,10 @@
   .compact #cta span b { transform: none; }
   .compact #cta i { display: flex; align-items: center; justify-content: center; width: 58px; transform: none; font-size: 18px; padding: 0; }
   .compact #cta:active span { background: var(--blue); }
-  .compact .callout text { font-size: 12px; letter-spacing: .12em; stroke-width: 0; }
+  .compact .callout text { font-size: 12.5px; }
   .callout .chip { fill: rgba(255,255,255,.9); stroke: rgba(31,92,255,.45); stroke-width: 1; }
   .callout:active .chip { fill: var(--blue); }
   .callout:active text, .callout:active text .idx { fill: #fff; }
-  .compact .callout circle { display: none; }
   .compact footer.bar { height: calc(44px + var(--sab)); }
   .compact #replay { padding: 10px 0 10px 12px; }
 </style>
@@ -699,23 +717,24 @@
       const tags = [];
       for (const o of OBJECTS) {
         if (!o.cl || o.hidden) { o.plan = null; continue; }
-        const below = true;
+        // slanted leader: dot at the piece's foot → short diagonal down → label on an underline
         const an = P(o.x, 0, o.z);
-        const L = (o.cl.w || 90) + 24;                 // chip width incl. padding
-        let cx = clamp(an[0], 12 + L / 2, vw - 12 - L / 2);
-        let ly = an[1] + 30;                           // text baseline; chip spans ly-16 .. ly+8
-        const box = () => [cx - L / 2, cx + L / 2, ly - 16, ly + 8];
+        const L = (o.cl.w || 90) + 10;
+        let dir = an[0] < vw / 2 ? 1 : -1;
+        let ly = an[1] + 24;
+        const box = () => { const x0 = an[0] + dir * 18, x1 = x0 + dir * L; return [Math.min(x0, x1), Math.max(x0, x1), ly - 18, ly + 4]; };
+        const fits = () => { const b = box(); return b[0] >= 8 && b[1] <= vw - 8; };
+        if (!fits()) dir = -dir;
         for (let pass = 0; pass < 8; pass++) {
-          const b = box(), hit = tags.find(q => b[0] < q[1] + 6 && b[1] + 6 > q[0] && b[2] < q[3] + 6 && b[3] + 6 > q[2]);
+          const hit = tags.find(q => { const b = box(); return b[0] < q[1] + 8 && b[1] + 8 > q[0] && b[2] < q[3] + 6 && b[3] + 6 > q[2]; });
           if (!hit) break;
-          // slide sideways (staying under the piece) before dropping a row
-          const left = cx < (hit[0] + hit[1]) / 2;
-          const nx = left ? hit[0] - 6 - L / 2 : hit[1] + 6 + L / 2;
-          if (nx - L / 2 >= 12 && nx + L / 2 <= vw - 12 && Math.abs(nx - an[0]) < L / 2 + 10) cx = nx;
-          else ly = hit[3] + 6 + 16;
+          dir = -dir;                                  // try the other side first
+          if (fits() && !tags.some(q => { const b = box(); return b[0] < q[1] + 8 && b[1] + 8 > q[0] && b[2] < q[3] + 6 && b[3] + 6 > q[2]; })) break;
+          dir = -dir; if (!fits()) dir = -dir;
+          ly = hit[3] + 6 + 18;                        // then drop a row
         }
         tags.push(box());
-        o.plan = { tag: true, below, dx: cx - an[0], dy: ly - an[1] };
+        o.plan = { tag: true, dir, dy: ly - an[1] };
       }
       C = saved;
       return;
@@ -937,20 +956,19 @@
       if (!o.cl || o.hidden || !o.plan) { o.cl && o.cl.a.setAttribute('opacity', 0); continue; }
       const kc = prog(t, [o.at + 350, o.at + 800]);
       if (o.plan.tag) {
-        const { below, dx, dy } = o.plan;
-        const an = P(o.x, below ? 0 : o.h + 0.12, o.z);
-        const L = (o.cl.w || 90) + 24, cx = an[0] + dx, ly = an[1] + dy;
-        const top = ly - 16, tickX = clamp(an[0], cx - L / 2 + 8, cx + L / 2 - 8);
-        o.cl.chip.setAttribute('x', (cx - L / 2).toFixed(1)); o.cl.chip.setAttribute('y', top.toFixed(1));
-        o.cl.chip.setAttribute('width', L.toFixed(1)); o.cl.chip.setAttribute('height', 24);
-        o.cl.chip.style.opacity = easeOut(prog(t, [o.at + 450, o.at + 900]));
-        o.cl.line.setAttribute('points', pts([[tickX, an[1] + 4], [tickX, top]]));
+        const { dir, dy } = o.plan;
+        const an = P(o.x, 0, o.z);
+        const L = (o.cl.w || 90) + 10, ly = an[1] + dy;
+        const p1 = [an[0] + dir * 18, ly], p2 = [p1[0] + dir * L, ly];
+        o.cl.chip.setAttribute('width', 0);
+        o.cl.line.setAttribute('points', pts([an, p1, p2]));
         o.cl.line.setAttribute('stroke-dashoffset', 1 - easeInOut(kc));
         o.cl.dot.setAttribute('cx', an[0].toFixed(1)); o.cl.dot.setAttribute('cy', an[1].toFixed(1));
-        o.cl.text.setAttribute('x', cx.toFixed(1)); o.cl.text.setAttribute('y', (ly + 0.5).toFixed(1));
-        o.cl.text.setAttribute('text-anchor', 'middle');
-        o.cl.hit.setAttribute('x', cx - L / 2 - 8); o.cl.hit.setAttribute('width', L + 16);
-        o.cl.hit.setAttribute('y', ly - 22); o.cl.hit.setAttribute('height', 36);
+        o.cl.text.setAttribute('x', (p1[0] + dir * 5).toFixed(1)); o.cl.text.setAttribute('y', (ly - 6).toFixed(1));
+        o.cl.text.setAttribute('text-anchor', dir > 0 ? 'start' : 'end');
+        const bx = Math.min(p1[0], p2[0]);
+        o.cl.hit.setAttribute('x', bx - 8); o.cl.hit.setAttribute('width', L + 16);
+        o.cl.hit.setAttribute('y', ly - 28); o.cl.hit.setAttribute('height', 40);
         o.cl.text.style.opacity = easeOut(prog(t, [o.at + 600, o.at + 1000]));
         o.cl.a.setAttribute('opacity', kc > 0 ? 1 : 0);
         continue;
@@ -1048,9 +1066,11 @@
   let footerH = siteFooter.offsetHeight, scrollQueued = false;
   addEventListener('resize', () => { footerH = siteFooter.offsetHeight; });
   // one style write per frame, transforms/opacity only (GPU-composited, no layout or repaint)
+  const nativeScrollFx = CSS.supports && CSS.supports('animation-timeline: scroll()');
   const applyScroll = () => {
     scrollQueued = false;
     collapse = clamp(scrollY / (footerH * .85));
+    if (nativeScrollFx) return;   // CSS scroll timeline drives the visuals; we only need `collapse` to pause the room
     hero.style.transform = `translate3d(0, ${(collapse * 2).toFixed(3)}vh, 0) scale(${(1 - collapse * .1).toFixed(4)})`;
     // wash: rises from below, covers the room mid-way, then wipes off the top; the room stays faded behind the glass
     const w = easeInOut(clamp(collapse / .92));
