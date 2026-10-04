@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Four40 Renovations</title>
 <meta name="description" content="Four40 — home renovations, built around the light.">
+<meta name="theme-color" content="#ffffff">
+<meta property="og:title" content="Four40 Renovations">
+<meta property="og:description" content="Kitchens, bathrooms, extensions and interiors — renovations built around the light.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230a1430'/%3E%3Cg fill='%231f5cff'%3E%3Crect x='7' y='7' width='8' height='8'/%3E%3Crect x='17' y='7' width='8' height='8'/%3E%3Crect x='7' y='17' width='8' height='8'/%3E%3C/g%3E%3Crect x='17' y='17' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@1&family=Unbounded:wght@400;500;700&display=swap" rel="stylesheet">
@@ -42,7 +47,10 @@
   .callout text .idx { fill: var(--blue); }
   .callout polyline { fill: none; stroke: var(--blue); stroke-width: 1; }
   .callout circle { fill: var(--blue); }
-  .callout:hover text { fill: var(--blue); }
+  .callout:hover text, .callout:focus-visible text { fill: var(--blue); }
+  .callout:focus-visible { outline: none; }
+  .callout:focus-visible polyline { stroke-width: 2; }
+  #cta:focus-visible, #replay:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
   #door { cursor: pointer; }
 
   /* ---------- UI overlay ---------- */
@@ -272,6 +280,9 @@
     wallFlash: [2900, 3150], wallOpen: [3000, 3900], menu: 3500,
     door: [4600, 5300], cta: 5100, end: 5800,
   };
+  // global pace: < 1 = faster. Everything (incl. furniture entrances) scales together.
+  const PACE = 0.82;
+  for (const k in T) T[k] = Array.isArray(T[k]) ? T[k].map(v => v * PACE) : T[k] * PACE;
 
   // ---------- easing ----------
   const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
@@ -433,9 +444,9 @@
     { shape: 'ladder',   L: [-3.7, 1.2, -1, 20],     P: [3.9, 3.8, -1, -18], at: 3400, anim: 'drop', label: ['01', 'Extensions'] },
     { shape: 'island',   L: [0.4, 2.8, -1, 20],      P: [0.6, 4.2, 1, 30],   at: 3800, anim: 'pop',  label: ['02', 'Kitchens'] },
     { shape: 'tub',      L: [3.7, 1.0, -1, 20],      P: [1.6, 7.6, -1, -24], at: 4000, anim: 'pop',  label: ['03', 'Bathrooms'] },
-    { shape: 'pendants', L: [0.4, 2.8],              P: [0.6, 4.2],          at: 4150, anim: 'drop', dropFrom: 4, noShadow: 1 },
+    { shape: 'pendants', L: [0.4, 2.8],              P: [0.6, 4.2],          at: 4150, anim: 'drop', dropFrom: 4, noShadow: 1, svc: 'Kitchens' },
     { shape: 'armchair', L: [1.6, 5.4, -1, 20, 1],   P: [-0.6, 7.4, 1, -14], at: 4250, anim: 'pop',  label: ['04', 'Interiors'] },
-    { shape: 'lamp',     L: [-2.2, 5.9],             P: null,                at: 4400, anim: 'pop' },
+    { shape: 'lamp',     L: [-2.2, 5.9],             P: null,                at: 4400, anim: 'pop', svc: 'Interiors' },
     { shape: 'plant',    L: [-4.4, 0.8],             P: [-2.0, 1.0],         at: 4500, anim: 'pop' },
   ];
   const buildShape = (parent, s) => {
@@ -447,6 +458,9 @@
   OBJECTS.forEach(o => {
     const s = SHAPES[o.shape];
     o.h = s.h;
+    o.at *= PACE;
+    o.svc = o.label ? o.label[1] : o.svc;
+    o.hl = 0; o.hlv = 0;
     o.g = el('g', { class: 'obj' }, $('objects'));
     o.inner = el('g', { 'stroke-width': 0 }, o.g);
     buildShape(o.inner, s);
@@ -454,7 +468,7 @@
     o.sinner = el('g', { fill: '#0a1430', stroke: '#0a1430', 'stroke-width': 0 }, o.sg);
     buildShape(o.sinner, s);
     if (o.label) {
-      const a = el('a', { href: '#services', class: 'callout', opacity: 0 }, $('callouts'));
+      const a = el('a', { href: '#services', class: 'callout', opacity: 0, 'aria-label': o.label[1] }, $('callouts'));
       o.cl = {
         a,
         line: el('polyline', { pathLength: 1, 'stroke-dasharray': 1, 'stroke-dashoffset': 1 }, a),
@@ -467,6 +481,21 @@
       el('tspan', { class: 'idx' }, o.cl.text).textContent = '  →';
       o.cl.w = 0;
     }
+  });
+
+  // hover / focus on a label or on a piece highlights the whole service
+  const setHL = (svc, on) => OBJECTS.forEach(q => { if (q.svc === svc) q.hl = on ? 1 : 0; });
+  OBJECTS.forEach(o => {
+    if (!o.svc) return;
+    const targets = [o.g, o.cl && o.cl.a].filter(Boolean);
+    for (const n of targets) {
+      n.addEventListener('pointerenter', () => setHL(o.svc, true));
+      n.addEventListener('pointerleave', () => setHL(o.svc, false));
+      n.addEventListener('focus', () => setHL(o.svc, true));
+      n.addEventListener('blur', () => setHL(o.svc, false));
+    }
+    o.g.style.cursor = 'pointer';
+    o.g.addEventListener('click', e => { e.stopPropagation(); location.hash = 'services'; });
   });
 
   // ---------- bands ----------
@@ -540,7 +569,14 @@
   // ---------- timeline control ----------
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let start = performance.now();
-  const seek = ms => { start = performance.now() - ms; };
+  // returning visitors (seen in the last 7 days) get the same intro at ~2.4x speed; Replay plays it at full pace
+  let rate = 1;
+  try {
+    const seen = +localStorage.getItem('four40-intro-seen');
+    if (seen && Date.now() - seen < 7 * 864e5) rate = 2.4;
+    localStorage.setItem('four40-intro-seen', Date.now());
+  } catch (e) {}
+  const seek = ms => { start = performance.now() - ms / rate; };
   if (reduce) seek(T.end + 2000);
   const skip = () => { if (performance.now() - start < T.end) seek(T.end); };
   svg.addEventListener('click', e => { if (!e.target.closest('#door, .callout')) skip(); });
@@ -552,7 +588,7 @@
 
   let skipFrame = false;
   function frame(now) {
-    const t = now - start;
+    const t = (now - start) * rate;
     if (compact && t > T.end + 1000 && (skipFrame = !skipFrame)) { requestAnimationFrame(frame); return; }
     const ts = now / 1000;
 
@@ -653,7 +689,7 @@
 
     // ----- objects: pop / drop in, with shadows cast by the moving sun -----
     OBJECTS.forEach(o => {
-      const k = clamp((t - o.at) / (o.anim === 'drop' ? 750 : 420));
+      const k = clamp((t - o.at) / (o.anim === 'drop' ? 680 : 380));
       let local = '', fill = '#0a1430', vis = t >= o.at && !o.hidden;
       if (o.anim === 'pop') {
         const sc = Math.max(0.001, easeOutBack(k));
@@ -663,6 +699,11 @@
         fill = `rgb(${Math.round(lerp(31, 10, c))},${Math.round(lerp(92, 20, c))},${Math.round(lerp(255, 48, c))})`;
       } else {
         local = `translate(0 ${-(1 - easeOutBounce(k)) * (o.dropFrom || 6)})`;
+      }
+      o.hlv += (o.hl - o.hlv) * .18;
+      if (o.hlv > .01 && k >= 1) {
+        const h = o.hlv * .9;
+        fill = `rgb(${Math.round(lerp(10, 31, h))},${Math.round(lerp(20, 92, h))},${Math.round(lerp(48, 255, h))})`;
       }
       if (o.flip) local += ' scale(-1 1)';
       const hm = o.h / 2;
@@ -775,7 +816,7 @@
     requestAnimationFrame(frame);
   }
 
-  $('replay').addEventListener('click', () => { if (!reduce) seek(0); });
+  $('replay').addEventListener('click', () => { if (!reduce) { rate = 1; seek(0); } });
   addEventListener('resize', layout);
   layout();
   measure();
