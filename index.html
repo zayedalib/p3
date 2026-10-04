@@ -41,16 +41,32 @@
     --display: var(--rodin);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; }
+  html { scroll-behavior: smooth; }
   body {
-    background: var(--white); color: var(--ink);
-    font-family: var(--mono); overflow: hidden;
+    background: #e6ecf7; color: var(--ink);
+    font-family: var(--mono); overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    /* no long-press selection / copy menus anywhere */
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  }
+  img, svg, a { -webkit-user-drag: none; }
+
+  /* the room is a sticky card; scrolling slides the footer over it while it collapses back */
+  #hero {
+    position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: var(--white);
+    transform-origin: 50% 0; will-change: transform;
+    transform: translateY(calc(var(--c, 0) * 2vh)) scale(calc(1 - var(--c, 0) * .1));
+    border-radius: calc(var(--c, 0) * 28px);
+    box-shadow: 0 30px 60px -30px rgba(15, 40, 120, calc(var(--c, 0) * .45));
+  }
+  #hero::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: rgba(230, 236, 247, calc(var(--c, 0) * .55));
   }
 
   /* ---------- Scene ---------- */
-  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  html, body { overscroll-behavior: none; }
+  #scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+  html, body { overscroll-behavior-x: none; }
   #scene .face { stroke: none; }
   #scene .edge { fill: none; stroke: var(--blue); stroke-width: 1; stroke-linejoin: round; }
   #scene .wedge { fill: none; stroke: var(--blue); stroke-width: 0.022; }
@@ -71,7 +87,35 @@
   #door { cursor: pointer; }
 
   /* ---------- UI overlay ---------- */
-  .ui { position: fixed; inset: 0; pointer-events: none; }
+  .ui { position: absolute; inset: 0; pointer-events: none; }
+  footer.bar .hint { color: var(--ink-soft); text-decoration: none; display: flex; gap: 8px; align-items: center; }
+  footer.bar .hint span { display: inline-block; color: var(--blue); animation: nudge 1.8s ease-in-out infinite; }
+  @keyframes nudge { 50% { transform: translateY(3px); } }
+
+  /* ---------- site footer (below the room) ---------- */
+  .site {
+    position: relative; z-index: 2; margin-top: -1px;
+    padding: 44px calc(clamp(20px, 5vw, 64px) + var(--sar)) calc(28px + var(--sab)) calc(clamp(20px, 5vw, 64px) + var(--sal));
+    background: rgba(255, 255, 255, .72); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+    border-radius: 28px 28px 0 0; border-top: 1px solid var(--glass-edge);
+    box-shadow: 0 -20px 50px -30px rgba(15, 40, 120, .35), inset 0 1px 0 rgba(255,255,255,.9);
+    font-size: 13px; letter-spacing: .04em;
+  }
+  .sf-top { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-end; justify-content: space-between; padding-bottom: 32px; border-bottom: 1px solid var(--line); }
+  .sf-logo { font: 600 clamp(40px, 8vw, 72px)/1 var(--display); letter-spacing: -.03em; }
+  .sf-logo b { color: var(--blue); font-weight: 600; }
+  .sf-brand p { margin-top: 10px; color: var(--ink-soft); font-size: 14px; }
+  .sf-cta { display: flex; align-items: stretch; text-decoration: none; font-size: 13px; letter-spacing: .16em; text-transform: uppercase; min-height: 52px; }
+  .sf-cta span { display: flex; align-items: center; padding: 0 20px; background: rgba(10, 20, 48, .9); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
+  .sf-cta i { display: flex; align-items: center; justify-content: center; width: 54px; background: var(--blue); color: #fff; font-style: normal; font-size: 18px; margin-left: 3px; }
+  .sf-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding: 32px 0; }
+  .sf-cols h4 { font: 600 11px var(--mono); letter-spacing: .3em; text-transform: uppercase; color: var(--blue); margin-bottom: 14px; }
+  .sf-cols a { display: block; padding: 8px 0; color: var(--ink); text-decoration: none; font-size: 15px; }
+  .sf-cols a:active, .sf-cols a:hover { color: var(--blue); }
+  .sf-bottom { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; padding-top: 22px; border-top: 1px solid var(--line); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-soft); }
+  .sf-bottom .acts { display: flex; gap: 20px; }
+  .sf-bottom button, .sf-bottom a { background: none; border: 0; font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--blue); text-decoration: none; cursor: pointer; padding: 10px 0; }
+  @media (max-width: 560px) { .sf-cols { grid-template-columns: 1fr 1fr; } .sf-cta { width: 100%; } .sf-cta span { flex: 1; justify-content: center; } }
   .ui a, .ui button { pointer-events: auto; }
 
   /* menu revealed behind the opened right wall */
@@ -182,6 +226,7 @@
 </head>
 <body>
 
+<div id="hero">
 <svg id="scene" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="gFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1f5fc"/><stop offset="1" stop-color="#fbfcfe"/></linearGradient>
@@ -275,7 +320,7 @@
   <a id="cta" href="#contact"><span><b>Book a consultation</b></span><i>→</i></a>
 
   <footer class="bar">
-    <span>© Four40 Renovations</span>
+    <a class="hint" href="#site-footer">Scroll <span>↓</span></a>
     <span class="links">
     <button id="replay" type="button" aria-label="Replay intro animation">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
@@ -284,6 +329,26 @@
     </span>
   </footer>
 </div>
+</div>
+
+<footer class="site" id="site-footer">
+  <div class="sf-top">
+    <div class="sf-brand">
+      <div class="sf-logo">FOUR<b>40</b></div>
+      <p>Renovations built around the light.</p>
+    </div>
+    <a class="sf-cta" href="#contact"><span>Book a consultation</span><i>→</i></a>
+  </div>
+  <div class="sf-cols">
+    <nav aria-label="Services"><h4>Services</h4><a href="#services">Kitchens</a><a href="#services">Bathrooms</a><a href="#services">Extensions</a><a href="#services">Interiors</a></nav>
+    <nav aria-label="Studio"><h4>Studio</h4><a href="#projects">Projects</a><a href="#process">Process</a><a href="#contact">Contact</a></nav>
+    <nav aria-label="Follow"><h4>Follow</h4><a href="#">Instagram</a><a href="#">Houzz</a><a href="#">Pinterest</a></nav>
+  </div>
+  <div class="sf-bottom">
+    <span>© Four40 Renovations</span>
+    <span class="acts"><button type="button" id="replay2">Replay intro</button><a href="#" id="toTop">Back to top ↑</a></span>
+  </div>
+</footer>
 
 <script>
 (() => {
@@ -339,8 +404,11 @@
   probe.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;padding:var(--sat) var(--sar) var(--sab) var(--sal)';
   document.body.appendChild(probe);
   let SA = { t: 0, b: 0, l: 0, r: 0 };
+  const hero = $('hero');
+  let lastW = 0, lastH = 0;
   function layout() {
-    vw = innerWidth; vh = innerHeight;
+    vw = hero.clientWidth; vh = hero.clientHeight;
+    lastW = vw; lastH = vh;
     const cs = getComputedStyle(probe);
     SA = { t: parseFloat(cs.paddingTop) || 0, b: parseFloat(cs.paddingBottom) || 0, l: parseFloat(cs.paddingLeft) || 0, r: parseFloat(cs.paddingRight) || 0 };
     svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
@@ -592,6 +660,40 @@
     return `matrix(${ux} ${uy} ${-vx} ${-vy} ${p0[0] - hm * vx} ${p0[1] - hm * vy})`;
   }
 
+  // ---------- label planning ----------
+  let labelPlanKey = '';
+  function planLabels(menuIn) {
+    const saved = C; C = { ...K1 };            // resting camera, no parallax
+    const GAP = 10;
+    const placed = [];
+    if (!compact && menuIn) {
+      const m = $('menu');
+      placed.push([m.offsetLeft - 6, m.offsetLeft + m.offsetWidth + 6, m.offsetTop - 6, m.offsetTop + m.offsetHeight + 6]);
+    }
+    const maxY = compact ? vh - 232 - SA.b : vh - 48 - SA.b;
+    for (const o of OBJECTS) {
+      if (!o.cl || o.hidden) { o.plan = null; continue; }
+      let below = o.rise < 0 && P(o.x, 0, o.z)[1] - o.rise + 22 < maxY;
+      let an = P(o.x, below ? -0.04 : o.h + 0.12, o.z);
+      const L = (o.cl.w || 90) + 14;
+      let dir = o.dir;
+      const reach = an[0] + dir * (20 + L);
+      if (reach < 6 || reach > vw - 6) dir = -dir;
+      let ly = below || o.rise >= 0 ? an[1] - o.rise : an[1] - 20;
+      const box = () => { const x0 = an[0] + dir * 20, x1 = x0 + dir * L; return [Math.min(x0, x1), Math.max(x0, x1), ly - (below ? 2 : 18), ly + (below ? 18 : 2)]; };
+      for (let pass = 0; pass < 6; pass++) {
+        const b = box();
+        const hit = placed.find(q => b[0] < q[1] && b[1] > q[0] && b[2] < q[3] + GAP && b[3] + GAP > q[2]);
+        if (!hit) break;
+        ly = below ? hit[3] + GAP + (ly - b[2]) : hit[2] - GAP - (b[3] - ly);
+        if (below && box()[3] > maxY) { below = false; an = P(o.x, o.h + 0.12, o.z); ly = an[1] - 20; }
+      }
+      placed.push(box());
+      o.plan = { below, dir, dy: ly - an[1] };
+    }
+    C = saved;
+  }
+
   // ---------- interaction ----------
   let mx = 0, my = 0, sx = 0, sy = 0;
   addEventListener('pointermove', e => { mx = e.clientX / vw - .5; my = e.clientY / vh - .5; });
@@ -635,7 +737,6 @@
     if (Math.abs(dx) + Math.abs(dy) > 8) drag.moved = true;
     // dragging right reveals more of the left of the room, like moving the view by hand
     dragX = clamp(drag.bx - dx / (vw * 1.2), -.5, .5);
-    dragY = clamp(drag.by - dy / (vh * 1.6), -.4, .4);
     mx = clamp(tx + dragX, -.6, .6); my = clamp(ty + dragY, -.6, .6);
   }, { passive: true });
   svg.addEventListener('touchend', () => { if (drag && drag.moved) suppressClick = performance.now(); drag = null; }, { passive: true });
@@ -802,35 +903,17 @@
 
     });
 
-    // ----- callouts: place each label, then push apart any that would overlap -----
-    // labels also steer clear of the glass menu panel (desktop)
-    const placed = [];
-    if (!compact && t > T.menu) {
-      const r = $('menu').getBoundingClientRect();
-      placed.push([r.left - 6, r.right + 6, r.top - 6, r.bottom + 6]);
-    }
+    // ----- callouts: planned once from the resting camera (so tilt/pan never re-shuffles them) -----
+    const planKey = [vw, vh, compact, t > T.menu, OBJECTS.map(o => o.cl ? o.cl.w : 0).join()].join('|');
+    if (planKey !== labelPlanKey) { planLabels(t > T.menu); labelPlanKey = planKey; }
     for (const o of OBJECTS) {
-      if (!o.cl || o.hidden) { o.cl && o.cl.a.setAttribute('opacity', 0); continue; }
+      if (!o.cl || o.hidden || !o.plan) { o.cl && o.cl.a.setAttribute('opacity', 0); continue; }
       const kc = prog(t, [o.at + 350, o.at + 800]);
-      // labels may not run into the bottom controls; a label that would gets flipped above its piece
-      const maxY = compact ? vh - 232 - SA.b : vh - 48 - SA.b;
-      let below = o.rise < 0 && P(o.x, 0, o.z)[1] - o.rise + 22 < maxY;
-      let an = P(o.x, below ? -0.04 : o.h + 0.12, o.z);
-      const L = (o.cl.w || 90) + 14;
-      let dir = o.dir;
-      const reach = an[0] + dir * (20 + L);
-      if (reach < 6 || reach > vw - 6) dir = -dir;
-      let ly = below || o.rise >= 0 ? an[1] - o.rise : an[1] - 20;
-      const box = () => { const x0 = an[0] + dir * 20, x1 = x0 + dir * L; return [Math.min(x0, x1), Math.max(x0, x1), ly - (below ? 2 : 18), ly + (below ? 18 : 2)]; };
-      for (let pass = 0; pass < 6; pass++) {
-        const b = box();
-        const hit = placed.find(q => b[0] < q[1] && b[1] > q[0] && b[2] < q[3] && b[3] > q[2]);
-        if (!hit) break;
-        ly = below ? hit[3] + 4 + (ly - b[2]) : hit[2] - 4 - (b[3] - ly);
-        if (below && box()[3] > maxY) { below = false; an = P(o.x, o.h + 0.12, o.z); ly = an[1] - 20; }
-      }
-      const hb = box();
-      placed.push(hb);
+      const { below, dir, dy } = o.plan;
+      const an = P(o.x, below ? -0.04 : o.h + 0.12, o.z);
+      const L = (o.cl.w || 90) + 14, ly = an[1] + dy;
+      const x0 = an[0] + dir * 20, x1 = x0 + dir * L;
+      const hb = [Math.min(x0, x1), Math.max(x0, x1), ly - (below ? 2 : 18), ly + (below ? 18 : 2)];
       o.cl.hit.setAttribute('x', hb[0] - 8); o.cl.hit.setAttribute('width', hb[1] - hb[0] + 16);
       o.cl.hit.setAttribute('y', hb[2] - 10); o.cl.hit.setAttribute('height', hb[3] - hb[2] + 20);
       const p1 = [an[0] + dir * 20, ly], p2 = [p1[0] + dir * L, ly];
@@ -907,7 +990,23 @@
   }
 
   $('replay').addEventListener('click', () => { if (!reduce) { rate = 1; seek(0); } });
-  addEventListener('resize', layout);
+  // relayout on real size changes only (ignore mobile toolbars sliding in and out)
+  addEventListener('resize', () => {
+    if (hero.clientWidth !== lastW || Math.abs(hero.clientHeight - lastH) > 140) layout();
+  });
+  // scrolling collapses the room card as the footer comes up
+  const siteFooter = $('site-footer');
+  let collapse = 0;
+  const onScroll = () => {
+    collapse = clamp(scrollY / (siteFooter.offsetHeight * .85));
+    document.documentElement.style.setProperty('--c', collapse.toFixed(3));
+  };
+  addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  $('toTop').addEventListener('click', e => { e.preventDefault(); scrollTo({ top: 0, behavior: 'smooth' }); });
+  $('replay2').addEventListener('click', () => { scrollTo({ top: 0, behavior: 'smooth' }); if (!reduce) { rate = 1; seek(0); } });
+  // no long-press menus on touch devices
+  addEventListener('contextmenu', e => { if (matchMedia('(pointer: coarse)').matches) e.preventDefault(); });
   layout();
   measure();
   document.fonts && document.fonts.ready.then(measure);
