@@ -7,210 +7,211 @@
 <meta name="description" content="Four40 — home renovations, built around the light.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@1&family=Unbounded:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --white: #ffffff;
-    --ink: #0b1a36;
+    --ink: #0a1430;
     --ink-soft: #4a5874;
     --blue: #1f5cff;
     --blue-deep: #0f3fd1;
-    --blue-pale: #e8efff;
     --line: rgba(31, 92, 255, 0.28);
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+    --display: Unbounded, system-ui, sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
   body {
-    background: var(--white);
-    color: var(--ink);
-    font-family: Manrope, system-ui, sans-serif;
-    overflow: hidden;
+    background: var(--white); color: var(--ink);
+    font-family: var(--mono); overflow: hidden;
     -webkit-font-smoothing: antialiased;
   }
 
   /* ---------- Scene ---------- */
-  #scene {
-    position: fixed; inset: 0;
-    width: 100%; height: 100%;
-    display: block;
-  }
-  #scene .face { stroke: var(--line); stroke-width: 1; stroke-linejoin: round; }
-  #scene .edge { fill: none; stroke: var(--blue); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #scene .face { stroke: none; }
+  #scene .edge { fill: none; stroke: var(--blue); stroke-width: 1; stroke-linejoin: round; }
   #scene .wedge { fill: none; stroke: var(--blue); stroke-width: 0.022; }
-  .logo-word { font-family: Unbounded, sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-  .logo-sub  { font-family: Manrope, sans-serif; font-weight: 600; letter-spacing: 0.42em; }
+  #scene .obj path.s { fill: none; stroke-linecap: round; }
+  .logo-word { font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; paint-order: stroke; stroke: #fff; stroke-width: .08; stroke-linejoin: round; }
+  .logo-sub  { font-family: var(--mono); font-weight: 600; letter-spacing: 0.38em; paint-order: stroke; stroke: #fff; stroke-width: .06; }
+  .band-serif { font-family: "Instrument Serif", Georgia, serif; font-style: italic; }
+  .band-mono  { font-family: var(--mono); font-weight: 500; letter-spacing: .32em; text-transform: uppercase; }
+  .callout { cursor: pointer; }
+  .callout text { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; fill: var(--ink); paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
+  .callout text .idx { fill: var(--blue); }
+  .callout polyline { fill: none; stroke: var(--blue); stroke-width: 1; }
+  .callout circle { fill: var(--blue); }
+  .callout:hover text { fill: var(--blue); }
+  #door { cursor: pointer; }
 
   /* ---------- UI overlay ---------- */
   .ui { position: fixed; inset: 0; pointer-events: none; }
-  .ui > * { pointer-events: auto; }
-  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
-  .ready .reveal { opacity: 1; transform: none; }
-  .ready .reveal.d1 { transition-delay: .08s; }
-  .ready .reveal.d2 { transition-delay: .16s; }
-  .ready .reveal.d3 { transition-delay: .24s; }
+  .ui a, .ui button { pointer-events: auto; }
 
-  nav.top {
-    position: absolute; top: 28px; right: 36px;
-    display: flex; gap: 30px; align-items: center;
-    font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  /* menu revealed behind the opened right wall */
+  .menu { position: absolute; top: 30vh; display: flex; flex-direction: column; gap: 6px; }
+  .menu .label {
+    font-size: 10px; letter-spacing: .3em; color: var(--blue); text-transform: uppercase; margin-bottom: 14px;
+    opacity: 0; transition: opacity .6s;
   }
-  nav.top a { color: var(--ink); text-decoration: none; position: relative; padding: 4px 0; }
-  nav.top a::after {
-    content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 1.5px;
-    background: var(--blue); transform: scaleX(0); transform-origin: left; transition: transform .35s ease;
+  .menu a {
+    position: relative; display: flex; align-items: baseline; gap: 14px;
+    padding: 6px 14px 8px 10px; color: var(--ink); text-decoration: none;
+    font: 500 var(--menu-size, 26px)/1 var(--display); text-transform: uppercase; letter-spacing: -.01em;
+    opacity: 0; transform: translateX(60px) skewX(-14deg);
+    transition: opacity .5s, transform .7s cubic-bezier(.2,.9,.25,1), color .25s;
   }
-  nav.top a:hover::after { transform: scaleX(1); }
+  .menu a .n { font: 500 11px var(--mono); color: var(--blue); letter-spacing: .1em; transition: color .25s; }
+  .menu a::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background: var(--blue); transform: skewX(-14deg) scaleX(0); transform-origin: left;
+    transition: transform .35s cubic-bezier(.7,0,.2,1);
+  }
+  .menu a:hover, .menu a:focus-visible { color: #fff; outline: none; }
+  .menu a:hover .n, .menu a:focus-visible .n { color: #fff; }
+  .menu a:hover::before, .menu a:focus-visible::before { transform: skewX(-14deg) scaleX(1); }
+  .menu-in .menu .label { opacity: 1; }
+  .menu-in .menu a { opacity: 1; transform: none; }
+  .menu-in .menu a:nth-of-type(2) { transition-delay: .08s; }
+  .menu-in .menu a:nth-of-type(3) { transition-delay: .16s; }
+  .menu-in .menu a:nth-of-type(4) { transition-delay: .24s; }
+  /* entry wipe: a blue bar runs across each item as it lands */
+  .menu a::after {
+    content: ""; position: absolute; inset: 0; background: var(--blue); pointer-events: none;
+    transform: skewX(-14deg) scaleX(1); transform-origin: right;
+    transition: transform .55s cubic-bezier(.7,0,.2,1) .25s;
+  }
+  .menu-in .menu a::after { transform: skewX(-14deg) scaleX(0); }
+  .menu-in .menu a:nth-of-type(2)::after { transition-delay: .33s; }
+  .menu-in .menu a:nth-of-type(3)::after { transition-delay: .41s; }
+  .menu-in .menu a:nth-of-type(4)::after { transition-delay: .49s; }
 
-  .hero {
-    position: absolute; left: clamp(20px, 4vw, 64px); bottom: clamp(70px, 12vh, 130px);
-    max-width: 440px;
+  /* door call-to-action tag */
+  #cta {
+    position: absolute; left: 0; top: 0; display: flex; align-items: stretch;
+    text-decoration: none; font: 500 11px var(--mono); letter-spacing: .16em; text-transform: uppercase;
+    opacity: 0; transition: opacity .4s; white-space: nowrap;
   }
-  .eyebrow {
-    font-size: 12px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--blue);
-    display: flex; align-items: center; gap: 12px;
-  }
-  .eyebrow::before { content: ""; width: 28px; height: 1.5px; background: var(--blue); }
-  .hero h1 {
-    font-family: Unbounded, sans-serif; font-weight: 500;
-    font-size: clamp(28px, 3.4vw, 50px); line-height: 1.05; letter-spacing: -0.03em;
-    margin: 14px 0 14px;
-  }
-  .hero h1 em { font-style: normal; color: var(--blue); }
-  .hero p { color: var(--ink-soft); font-size: 15px; line-height: 1.6; max-width: 380px; }
-  .cta { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
-  .btn {
-    font: 600 14px/1 Manrope, sans-serif; letter-spacing: .02em;
-    padding: 15px 22px; border-radius: 999px; text-decoration: none; cursor: pointer;
-    transition: background .25s, color .25s, box-shadow .25s, transform .25s;
-  }
-  .btn.primary { background: var(--blue); color: #fff; box-shadow: 0 10px 30px -10px rgba(31,92,255,.65); }
-  .btn.primary:hover { background: var(--blue-deep); transform: translateY(-1px); }
-  .btn.ghost { color: var(--ink); background: rgba(255,255,255,.7); box-shadow: inset 0 0 0 1.5px var(--line); backdrop-filter: blur(6px); }
-  .btn.ghost:hover { box-shadow: inset 0 0 0 1.5px var(--blue); color: var(--blue); }
+  #cta span { background: var(--ink); color: #fff; padding: 9px 12px 9px 14px; transform: skewX(-12deg); }
+  #cta span b { display: inline-block; transform: skewX(12deg); font-weight: 500; }
+  #cta i { background: var(--blue); color: #fff; font-style: normal; padding: 9px 11px; transform: skewX(-12deg); margin-left: 3px; transition: transform .3s; }
+  #cta:hover i, #cta.open i { transform: skewX(-12deg) translateX(4px); }
+  .cta-in #cta { opacity: 1; }
 
   footer.bar {
-    position: absolute; left: 0; right: 0; bottom: 0; height: 44px;
+    position: absolute; left: 0; right: 0; bottom: 0; height: 40px;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 clamp(20px, 4vw, 64px);
-    font-size: 12px; color: var(--ink-soft); letter-spacing: .04em;
-    background: rgba(255,255,255,.82); backdrop-filter: blur(8px);
-    border-top: 1px solid var(--line);
+    padding: 0 clamp(16px, 3vw, 48px);
+    font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-soft);
+    background: #fff; border-top: 1px solid var(--line);
   }
   footer.bar::before {
     content: ""; position: absolute; left: 0; top: -1px; height: 2px; width: 100%;
-    background: var(--blue); transform: scaleX(0); transform-origin: left;
-    transition: transform 1.4s cubic-bezier(.7,0,.2,1);
+    background: var(--blue); transform: scaleX(var(--prog, 0)); transform-origin: left;
   }
-  .ready footer.bar::before { transform: scaleX(1); }
-  #replay {
-    background: none; border: 0; color: var(--blue); font: 600 12px Manrope, sans-serif;
-    letter-spacing: .08em; text-transform: uppercase; cursor: pointer; display: flex; gap: 8px; align-items: center;
-  }
-  #replay svg { width: 14px; height: 14px; }
+  #replay { background: none; border: 0; color: var(--blue); font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; display: flex; gap: 8px; align-items: center; }
+  #replay svg { width: 13px; height: 13px; }
 
-  @media (max-width: 760px) {
-    nav.top { top: auto; bottom: 58px; right: auto; left: 20px; gap: 18px; font-size: 11px; }
-    .hero { bottom: 100px; right: 20px; max-width: none; }
-    .hero p { font-size: 14px; }
-    footer.bar { font-size: 11px; }
-  }
+  /* compact layout: menu becomes a row, the door CTA docks above the footer */
+  .compact .menu { top: auto !important; left: 16px !important; right: 16px; bottom: 56px; flex-direction: row; flex-wrap: wrap; gap: 2px 4px; }
+  .compact .menu .label { display: none; }
+  .compact .menu a { --menu-size: 13px; padding: 7px 10px; gap: 8px; }
+  .compact #cta { left: 16px !important; top: auto !important; bottom: 132px; }
 </style>
 </head>
 <body>
 
-<svg id="scene" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<svg id="scene" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="gFloor" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f3f6fc"/>
-      <stop offset="1" stop-color="#fbfcfe"/>
-    </linearGradient>
-    <linearGradient id="gLeft" x1="1" y1="0" x2="0" y2="0">
-      <stop offset="0" stop-color="#f4f7fc"/>
-      <stop offset="1" stop-color="#e6edf8"/>
-    </linearGradient>
-    <linearGradient id="gRight" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#e9eff9"/>
-      <stop offset="1" stop-color="#d4dff1"/>
-    </linearGradient>
-    <linearGradient id="gCeil" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0" stop-color="#f8fafd"/>
-      <stop offset="1" stop-color="#eef3fa"/>
-    </linearGradient>
-    <linearGradient id="gGlass" x1="0" y1="0" x2="0.4" y2="1">
-      <stop offset="0" stop-color="#2a63ff"/>
-      <stop offset="1" stop-color="#7fa6ff"/>
-    </linearGradient>
+    <linearGradient id="gFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1f5fc"/><stop offset="1" stop-color="#fbfcfe"/></linearGradient>
+    <linearGradient id="gLeft" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#f4f7fc"/><stop offset="1" stop-color="#e5ecf8"/></linearGradient>
+    <linearGradient id="gRight" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e9eff9"/><stop offset="1" stop-color="#d4dff1"/></linearGradient>
+    <linearGradient id="gCeil" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#f8fafd"/><stop offset="1" stop-color="#eef3fa"/></linearGradient>
+    <linearGradient id="gGlass" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#2a63ff"/><stop offset="1" stop-color="#7fa6ff"/></linearGradient>
+    <linearGradient id="gDoorway" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f5cff"/><stop offset="1" stop-color="#8fb0ff"/></linearGradient>
     <radialGradient id="gSun">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset=".62" stop-color="#ffffff"/>
-      <stop offset=".7" stop-color="#eaf1ff"/>
-      <stop offset="1" stop-color="#eaf1ff" stop-opacity="0"/>
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#ffffff"/>
+      <stop offset=".68" stop-color="#e3ecff"/><stop offset="1" stop-color="#e3ecff" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="gReflect" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1f5cff" stop-opacity=".22"/>
-      <stop offset=".8" stop-color="#1f5cff" stop-opacity="0"/>
+      <stop offset="0" stop-color="#1f5cff" stop-opacity=".22"/><stop offset=".8" stop-color="#1f5cff" stop-opacity="0"/>
     </linearGradient>
     <clipPath id="clipFloor"><polygon id="floorClipPoly"/></clipPath>
-    <clipPath id="clipPanes" clipPathUnits="userSpaceOnUse"><g id="paneClipRects"></g></clipPath>
+    <clipPath id="clipPanes" clipPathUnits="userSpaceOnUse"></clipPath>
     <filter id="fSoft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur id="fSoftBlur" stdDeviation="2"/></filter>
+    <filter id="fShadow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur id="fShadowBlur" stdDeviation="1.5"/></filter>
     <filter id="fBeam" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur id="fBeamBlur" stdDeviation="10"/></filter>
   </defs>
 
-  <!-- room faces -->
   <g id="faces">
     <polygon id="ceil"  class="face" fill="url(#gCeil)"/>
     <polygon id="floor" class="face" fill="url(#gFloor)"/>
     <polygon id="left"  class="face" fill="url(#gLeft)"/>
-    <polygon id="right" class="face" fill="url(#gRight)"/>
     <polygon id="back"  class="face" fill="#ffffff"/>
   </g>
 
-  <!-- floor: reflection + projected window light -->
+  <!-- door on the left wall: lit doorway + leaf -->
+  <g id="door" opacity="0">
+    <polygon id="doorway" fill="url(#gDoorway)"/>
+    <polygon id="doorSpill" fill="#1f5cff" opacity="0"/>
+    <clipPath id="clipDoor"><polygon id="doorClipPoly"/></clipPath>
+    <polygon id="doorLeaf" clip-path="url(#clipDoor)" fill="#0a1430" stroke="#1f5cff" stroke-width="1.5" stroke-linejoin="round"/>
+    <polygon id="doorFrame" fill="none" stroke="#1f5cff" stroke-width="1.5"/>
+  </g>
+
   <g clip-path="url(#clipFloor)">
     <g id="reflect"></g>
     <g id="floorLight" filter="url(#fSoft)"></g>
+    <g id="shadows" filter="url(#fShadow)"></g>
   </g>
 
-  <!-- back-wall content lives in wall coordinates (units, y down) -->
+  <!-- back-wall content in wall coordinates (world units, y down) -->
   <g id="wall">
-    <g id="logo">
-      <text class="logo-word" x="0" y="0" font-size="1"><tspan fill="#0b1a36">FOUR</tspan><tspan fill="#1f5cff">40</tspan></text>
-      <text class="logo-sub" x="0.04" y="0.5" font-size="0.25" fill="#0b1a36">RENOVATIONS</text>
-    </g>
     <g id="window">
       <rect id="winGlow" fill="#1f5cff" opacity="0"/>
       <g id="panes"></g>
-      <g clip-path="url(#clipPanes)"><circle id="sun" r="1.7" fill="url(#gSun)"/></g>
-      <g id="paneEdges"></g>
-      <rect id="winFrame" class="wedge" fill="none" pathLength="1"/>
     </g>
   </g>
+  <!-- sun sits behind the wall (parallax), seen only through the glass -->
+  <g clip-path="url(#clipPanes)"><circle id="sun" fill="url(#gSun)"/></g>
+  <g id="wallTop">
+    <g id="paneEdges"></g>
+    <rect id="winFrame" class="wedge" pathLength="1" stroke-dasharray="1"/>
+  </g>
 
-  <!-- light volume + dust, over everything in the room -->
+  <!-- right wall drawn late so it can swing open over the scene -->
+  <polygon id="right" class="face" fill="url(#gRight)"/>
+  <polygon id="rightFlash" fill="#1f5cff" opacity="0"/>
+
+  <g id="edges"></g>
+
   <g id="beam" filter="url(#fBeam)" style="mix-blend-mode:multiply"></g>
+  <g id="objects"></g>
   <g id="dust"></g>
 
-  <!-- room edges that draw themselves in -->
-  <g id="edges"></g>
+  <!-- foreground bands -->
+  <g id="bandA" opacity="0"><rect fill="#0a1430"/><text class="band-serif" fill="#ffffff"></text></g>
+  <g id="bandB" opacity="0" style="mix-blend-mode:multiply"><rect fill="#1f5cff" opacity=".92"/><text class="band-mono" fill="#ffffff"></text></g>
+
+  <g id="callouts"></g>
+
+  <g id="logo">
+    <text class="logo-word" x="0" y="0" font-size="1"><tspan fill="#0a1430">FOUR</tspan><tspan fill="#1f5cff">40</tspan></text>
+    <text class="logo-sub" x="0.04" y="0.5" font-size="0.25" fill="#0a1430">RENOVATIONS</text>
+  </g>
 </svg>
 
 <div class="ui" id="ui">
-  <nav class="top reveal" aria-label="Primary">
-    <a href="#services">Services</a>
-    <a href="#projects">Projects</a>
-    <a href="#process">Process</a>
-    <a href="#contact">Contact</a>
+  <nav class="menu" id="menu" aria-label="Primary">
+    <div class="label">Index</div>
+    <a href="#services"><span class="n">01</span><span>Services</span></a>
+    <a href="#projects"><span class="n">02</span><span>Projects</span></a>
+    <a href="#process"><span class="n">03</span><span>Process</span></a>
+    <a href="#contact"><span class="n">04</span><span>Contact</span></a>
   </nav>
 
-  <section class="hero">
-    <div class="eyebrow reveal">Home renovations</div>
-    <h1 class="reveal d1">Built around<br><em>the light.</em></h1>
-    <p class="reveal d2">Kitchens, bathrooms, extensions and whole-home renovations — designed and delivered by Four40.</p>
-    <div class="cta reveal d3">
-      <a class="btn primary" href="#contact">Book a consultation</a>
-      <a class="btn ghost" href="#projects">View projects</a>
-    </div>
-  </section>
+  <a id="cta" href="#contact"><span><b>Book a consultation</b></span><i>→</i></a>
 
   <footer class="bar">
     <span>© Four40 Renovations</span>
@@ -227,15 +228,21 @@
   const $ = id => document.getElementById(id);
   const svg = $('scene');
 
-  // ---------- Room (world units). x: left→right, y: floor→ceiling, z: back wall(0) → camera ----------
+  // ---------- World. x: left→right, y: floor→ceiling, z: back wall (0) → camera ----------
   const W2 = 5, H = 6.5;
   const WIN = { x0: -0.4, x1: 2.6, y0: 2.4, y1: 5.4, cols: 4, rows: 4, gap: 0.07 };
+  const WC = { x: (WIN.x0 + WIN.x1) / 2, y: (WIN.y0 + WIN.y1) / 2 };
   const LOGO = { x: -4.55, y: 5.55, size: 0.78 };
+  const DOOR = { z0: 3.0, z1: 4.4, h: 3.5 };
+  const SUN = { D: 3, R: 2.1 };
 
   // ---------- Timeline (ms) ----------
   const T = {
-    edges: [0, 900], faces: [200, 1000], cam: [150, 2900], reflect: [700, 2300],
-    outline: [2500, 3200], fill: [2950, 3750], sun: [3350, 4900], light: [3800, 6400], ui: 5000,
+    edges: [0, 900], faces: [200, 1000], cam: [150, 2900], reflect: [700, 2300], logo: [2300, 3100],
+    outline: [2500, 3200], fill: [2950, 3750], sun: [3300, 5400], light: [3700, 5600],
+    bandA: [3500, 4400], bandB: [3850, 4800],
+    wallFlash: [4700, 5000], wallOpen: [4850, 5950], menu: 5500,
+    door: [6900, 7450], cta: 7450, end: 8300,
   };
 
   // ---------- easing ----------
@@ -244,10 +251,17 @@
   const prog = (t, [a, b]) => clamp((t - a) / (b - a));
   const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   const easeOut = t => 1 - Math.pow(1 - t, 3);
-  const easeOutExpo = t => t >= 1 ? 1 : 1 - Math.pow(2, -10 * t);
+  const easeOutBack = t => { const c = 1.9; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+  const easeOutBounce = t => {
+    const n = 7.5625, d = 2.75;
+    if (t < 1 / d) return n * t * t;
+    if (t < 2 / d) return n * (t -= 1.5 / d) * t + .75;
+    if (t < 2.5 / d) return n * (t -= 2.25 / d) * t + .9375;
+    return n * (t -= 2.625 / d) * t + .984375;
+  };
 
-  // ---------- camera keyframes depend on viewport ----------
-  let vw = 0, vh = 0, K0, K1;
+  // ---------- layout / camera keyframes ----------
+  let vw = 0, vh = 0, K0, K1, S0, compact = false;
   function layout() {
     vw = innerWidth; vh = innerHeight;
     svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
@@ -261,10 +275,33 @@
       K1 = { x: -3.0, y: 2.2, z: 10, f: 0.56 * U, px: 0.5 * vw - 0.205 * U, py: 0.42 * vh };
       K0 = { x: 0, y: H / 2, z: 18, f: 0.62 * U, px: 0.5 * vw, py: 0.5 * vh };
     }
+    // resting sun: chosen so it reads at a fixed spot in the window from the final camera
+    const want = { x: 1.75, y: 3.6 }, k = (K1.z + SUN.D) / K1.z;
+    S0 = { x: K1.x + (want.x - K1.x) * k, y: K1.y + (want.y - K1.y) * k };
+
+    // menu lives in the space revealed behind the right wall
+    const backRight = K1.px + K1.f / K1.z * (W2 - K1.x);
+    const menuLeft = backRight + Math.max(28, vw * 0.025);
+    const menuW = vw - menuLeft - 20;
+    compact = portrait || menuW < 210;
+    document.body.classList.toggle('compact', compact);
+    const menu = $('menu');
+    menu.style.left = menuLeft + 'px';
+    menu.style.setProperty('--menu-size', clamp(menuW / 9.5, 16, 30) + 'px');
+
+    // furniture placement for this layout, drawn back-to-front
+    OBJECTS.forEach(o => {
+      const c = portrait ? o.P : o.L;
+      o.hidden = !c;
+      if (c) [o.x, o.z, o.dir = 1, o.rise = 20, o.flip = 0] = c;
+    });
+    [...OBJECTS].sort((a, b) => a.z - b.z).forEach(o => $('objects').appendChild(o.g));
+    portraitMode = portrait;
   }
+  let portraitMode = false;
 
   // ---------- projection ----------
-  let C; // current camera
+  let C;
   const NEAR = 0.12;
   const P = (x, y, z) => {
     const d = Math.max(C.z - z, NEAR);
@@ -273,7 +310,6 @@
   const pts = arr => arr.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
   const poly = (...p3) => pts(p3.map(p => P(...p)));
 
-  // ---------- build static DOM ----------
   const el = (tag, attrs, parent) => {
     const n = document.createElementNS(NS, tag);
     for (const k in attrs) n.setAttribute(k, attrs[k]);
@@ -281,82 +317,201 @@
     return n;
   };
 
+  // ---------- room edges ----------
   const edgeNames = ['back', 'left', 'right', 'floor', 'ceil'];
   const edgeEls = {};
   edgeNames.forEach(n => edgeEls[n] = el('polygon', { class: 'edge', pathLength: 1, 'stroke-dasharray': 1, opacity: .55 }, $('edges')));
 
-  // window panes (wall-space, y down => yd = -y)
-  const panes = [], paneEdges = [], lightPanes = [];
+  // ---------- window ----------
+  const panes = [], paneEdges = [], lightPanes = [], paneClips = [];
   const pw = (WIN.x1 - WIN.x0) / WIN.cols, ph = (WIN.y1 - WIN.y0) / WIN.rows, g = WIN.gap;
   for (let r = 0; r < WIN.rows; r++) for (let c = 0; c < WIN.cols; c++) {
     const x0 = WIN.x0 + c * pw + g, x1 = WIN.x0 + (c + 1) * pw - g;
-    const y1 = WIN.y1 - r * ph - g, y0 = WIN.y1 - (r + 1) * ph + g; // world y (up)
+    const y1 = WIN.y1 - r * ph - g, y0 = WIN.y1 - (r + 1) * ph + g;
     const rect = { x: x0, y: -y1, width: x1 - x0, height: y1 - y0 };
     panes.push({ r, c, x0, x1, y0, y1, fill: el('rect', { ...rect, fill: 'url(#gGlass)', opacity: 0 }, $('panes')) });
-    el('rect', rect, $('paneClipRects'));
+    paneClips.push(el('rect', rect, $('clipPanes')));
     paneEdges.push(el('rect', { ...rect, class: 'wedge', pathLength: 1, 'stroke-dasharray': 1, 'stroke-dashoffset': 1 }, $('paneEdges')));
     lightPanes.push(el('polygon', { fill: '#1f5cff' }, $('floorLight')));
   }
   const fr = { x: WIN.x0 - 0.06, y: -WIN.y1 - 0.06, width: WIN.x1 - WIN.x0 + 0.12, height: WIN.y1 - WIN.y0 + 0.12 };
-  for (const k in fr) $('winFrame').setAttribute(k, fr[k]);
-  $('winFrame').setAttribute('stroke-dasharray', 1);
-  for (const k in fr) $('winGlow').setAttribute(k, fr[k]);
+  for (const k in fr) { $('winFrame').setAttribute(k, fr[k]); $('winGlow').setAttribute(k, fr[k]); }
 
-  $('logo').setAttribute('transform', `translate(${LOGO.x} ${-LOGO.y}) scale(${LOGO.size})`);
-
-  // reflection = logo mirrored about the floor plane (y -> -y)
+  // floor reflection of the logo (mirror image about y = 0, in wall space)
   const refl = $('logo').cloneNode(true); refl.removeAttribute('id');
   refl.setAttribute('transform', `translate(${LOGO.x} ${LOGO.y}) scale(${LOGO.size} ${-LOGO.size})`);
+  refl.querySelectorAll('text').forEach(t => t.removeAttribute('class'));
   refl.querySelectorAll('tspan,text').forEach(t => t.setAttribute('fill', 'url(#gReflect)'));
   const reflWrap = el('g', {}, $('reflect')); reflWrap.appendChild(refl);
 
   const beamQuads = [0, 1, 2, 3].map(() => el('polygon', { fill: '#1f5cff' }, $('beam')));
 
-  // dust motes floating inside the light volume
   const dust = Array.from({ length: 26 }, () => ({
     u: Math.random(), v: Math.random(), t: Math.random(), s: .6 + Math.random() * .9,
     ph: Math.random() * 6.28, sp: .15 + Math.random() * .35,
     n: el('circle', { fill: '#1f5cff' }, $('dust')),
   }));
 
-  // ---------- light (sun) direction: L = (a, -1, b). Wall point (x,y,0) lands on floor at (x + a*y, 0, b*y) ----------
-  let A = 0, B = 0;
-  const toFloor = (x, y) => [x + A * y, 0, B * y];
+  // ---------- silhouettes: the room furnishes itself; each piece is a service ----------
+  // Drawn in world units, origin at the floor contact point, y negative = up.
+  const SHAPES = {
+    ladder: { h: 1.98, d: [
+      ['M-0.4,0 L-0.22,-1.9 M0.4,0 L0.22,-1.9', .07, 1],
+      ['M0.3,-1.86 L0.62,0', .05, 1],
+      ['M-0.36,-0.45 H0.36 M-0.31,-0.9 H0.31 M-0.27,-1.35 H0.27', .05, 1],
+      ['M-0.3,-1.98 H0.3 V-1.86 H-0.3Z'],
+    ]},
+    island: { h: 1.0, d: [
+      ['M-1.42,-0.99 H1.42 V-0.89 H-1.42Z'],
+      ['M-1.3,-0.89 H1.3 V-0.07 H1.22 V0 H-1.22 V-0.07 H-1.3Z'],
+      // stools at either end
+      ['M1.58,-0.76 h0.42 v0.07 h-0.42z M1.62,-0.69 L1.57,0 h0.04 L1.68,-0.69z M1.96,-0.69 L2.01,0 h-0.04 L1.9,-0.69z M1.6,-0.26 h0.38 v0.03 h-0.38z'],
+      ['M-2,-0.76 h0.42 v0.07 h-0.42z M-1.96,-0.69 L-2.01,0 h0.04 L-1.9,-0.69z M-1.62,-0.69 L-1.57,0 h-0.04 L-1.68,-0.69z M-1.98,-0.26 h0.38 v0.03 h-0.38z'],
+    ]},
+    pendants: { h: 6.5, d: [
+      ['M-0.62,-6.5 V-3.1 M0.62,-6.5 V-3.1', .025, 1],
+      ['M-0.95,-2.76 Q-0.93,-3.12 -0.62,-3.14 Q-0.31,-3.12 -0.29,-2.76Z M0.29,-2.76 Q0.31,-3.12 0.62,-3.14 Q0.93,-3.12 0.95,-2.76Z'],
+    ]},
+    tub: { h: 1.05, d: [
+      ['M-0.9,-0.67 H0.9 V-0.6 H-0.9Z'],
+      ['M-0.82,-0.6 H0.82 C0.82,-0.3 0.62,-0.16 0.4,-0.16 H-0.4 C-0.62,-0.16 -0.82,-0.3 -0.82,-0.6Z'],
+      ['M0.42,-0.2 L0.6,-0.2 L0.64,0 L0.52,0Z M-0.42,-0.2 L-0.6,-0.2 L-0.64,0 L-0.52,0Z'],
+      ['M1.02,0 V-0.96 Q1.02,-1.04 0.94,-1.04 H0.8', .045, 1],
+    ]},
+    armchair: { h: 1.02, d: [
+      ['M-0.5,-0.44 L-0.64,-0.98 Q-0.62,-1.04 -0.53,-1.01 L-0.34,-0.44Z'],
+      ['M-0.52,-0.46 H0.46 V-0.27 H-0.52Z'],
+      ['M0.3,-0.64 H0.52 V-0.58 H0.46 V-0.3 H0.38 V-0.58 H0.3Z'],
+      ['M-0.44,-0.28 L-0.5,0 H-0.45 L-0.36,-0.28Z M0.36,-0.28 L0.43,0 H0.48 L0.43,-0.28Z'],
+    ]},
+    lamp: { h: 1.8, d: [
+      ['M-0.18,-0.04 H0.18 V0 H-0.18Z'],
+      ['M0,0 V-1.52', .04, 1],
+      ['M-0.21,-1.5 L0.21,-1.5 L0.13,-1.8 L-0.13,-1.8Z'],
+    ]},
+    plant: { h: 1.3, d: [
+      ['M-0.2,-0.42 H0.2 L0.15,0 H-0.15Z'],
+      ['M0,-0.42 Q-0.35,-0.8 -0.1,-1.15 Q0,-0.8 0,-0.42Z M0,-0.42 Q0.4,-0.75 0.32,-1.05 Q0.08,-0.8 0,-0.42Z M0,-0.42 Q-0.1,-0.9 0.05,-1.3 Q0.15,-0.9 0,-0.42Z M0,-0.42 Q-0.45,-0.55 -0.5,-0.82 Q-0.2,-0.7 0,-0.42Z M0,-0.42 Q0.42,-0.5 0.52,-0.7 Q0.2,-0.66 0,-0.42Z'],
+    ]},
+  };
+  // Placement per layout — L: landscape, P: portrait (null = not shown) — as
+  // [x, z, label direction, label rise px (negative = label hangs below the piece), mirrored].
+  const OBJECTS = [
+    { shape: 'ladder',   L: [-3.7, 1.2, -1, 20],     P: [-3.4, 2.8, 1, 20],  at: 5300, anim: 'drop', label: ['01', 'Extensions'] },
+    { shape: 'island',   L: [0.4, 2.8, -1, 20],      P: [0.6, 4.5, 1, 40],   at: 5900, anim: 'pop',  label: ['02', 'Kitchens'] },
+    { shape: 'tub',      L: [3.7, 1.0, -1, 20],      P: [1.1, 7.8, -1, -30], at: 6150, anim: 'pop',  label: ['03', 'Bathrooms'] },
+    { shape: 'pendants', L: [0.4, 2.8],              P: [0.6, 4.5],          at: 6300, anim: 'drop', dropFrom: 4, noShadow: 1 },
+    { shape: 'armchair', L: [1.6, 5.4, -1, 20, 1],   P: [-0.8, 7.8, 1, -10], at: 6400, anim: 'pop',  label: ['04', 'Interiors'] },
+    { shape: 'lamp',     L: [-2.2, 5.9],             P: null,                at: 6600, anim: 'pop' },
+    { shape: 'plant',    L: [-4.4, 0.8],             P: [3.6, 2.6],          at: 6750, anim: 'pop' },
+  ];
+  const buildShape = (parent, s) => {
+    for (const [d, sw, stroked] of s.d) {
+      const p = el('path', { d }, parent);
+      if (stroked) { p.setAttribute('class', 's'); p.setAttribute('stroke-width', sw); }
+    }
+  };
+  OBJECTS.forEach(o => {
+    const s = SHAPES[o.shape];
+    o.h = s.h;
+    o.g = el('g', { class: 'obj' }, $('objects'));
+    o.inner = el('g', { 'stroke-width': 0 }, o.g);
+    buildShape(o.inner, s);
+    o.sg = el('g', {}, $('shadows'));
+    o.sinner = el('g', { fill: '#0a1430', stroke: '#0a1430', 'stroke-width': 0 }, o.sg);
+    buildShape(o.sinner, s);
+    if (o.label) {
+      const a = el('a', { href: '#services', class: 'callout', opacity: 0 }, $('callouts'));
+      o.cl = {
+        a,
+        line: el('polyline', { pathLength: 1, 'stroke-dasharray': 1, 'stroke-dashoffset': 1 }, a),
+        dot: el('circle', { r: 2.5 }, a),
+        text: el('text', {}, a),
+      };
+      el('tspan', { class: 'idx' }, o.cl.text).textContent = o.label[0] + '  ';
+      el('tspan', {}, o.cl.text).textContent = o.label[1];
+      o.cl.w = 0;
+    }
+  });
 
-  // ---------- pointer parallax (the 2.5D part) ----------
+  // ---------- bands ----------
+  const bandText = {
+    A: 'Renovations built around the light — Kitchens · Bathrooms · Extensions · Interiors — ',
+    B: 'Four40 — Design · Build · Renovate — ',
+  };
+  for (const k of ['A', 'B']) $('band' + k).querySelector('text').textContent = bandText[k].repeat(14);
+  const bandWidths = { A: 0, B: 0 };
+  const measure = () => {
+    for (const k of ['A', 'B']) {
+      const t = $('band' + k).querySelector('text');
+      bandWidths[k] = t.getComputedTextLength() / 14;
+    }
+    OBJECTS.forEach(o => o.cl && (o.cl.w = o.cl.text.getComputedTextLength()));
+  };
+
+  // ---------- light ----------
+  // Light direction L = (a, -1, b): a wall/scene point at height y lands on the floor at (x + a*y, 0, z + b*y).
+  let A = 0, B = 0;
+  const toFloor = (x, y, z = 0) => [x + A * y, 0, z + B * y];
+
+  // Affine mapping for a flat cut-out standing at (x0, z0), or its shadow on the floor.
+  // Exact for the billboard (it is parallel to the image plane); a close fit for the shadow.
+  function affine(x0, z0, hm, shadow) {
+    const at = (lx, ly) => shadow ? P(...toFloor(x0 + lx, ly, z0)) : P(x0 + lx, ly, z0);
+    const p0 = at(0, hm), p1 = at(1, hm), p2 = at(0, hm + 1);
+    const ux = p1[0] - p0[0], uy = p1[1] - p0[1], vx = p2[0] - p0[0], vy = p2[1] - p0[1];
+    return `matrix(${ux} ${uy} ${-vx} ${-vy} ${p0[0] - hm * vx} ${p0[1] - hm * vy})`;
+  }
+
+  // ---------- interaction ----------
   let mx = 0, my = 0, sx = 0, sy = 0;
   addEventListener('pointermove', e => { mx = e.clientX / vw - .5; my = e.clientY / vh - .5; });
   addEventListener('deviceorientation', e => {
     if (e.gamma == null) return;
     mx = clamp(e.gamma / 40, -.5, .5); my = clamp((e.beta - 45) / 40, -.5, .5);
   });
+  let doorTarget = 0, doorOpen = 0;
+  for (const n of [$('door'), $('cta')]) {
+    n.addEventListener('pointerenter', () => doorTarget = 1);
+    n.addEventListener('pointerleave', () => doorTarget = 0);
+  }
+  $('door').addEventListener('click', () => location.hash = 'contact');
 
-  // ---------- frame ----------
+  // ---------- timeline control ----------
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let start = performance.now();
-  if (reduce) start -= 99999;
-  let uiShown = false;
+  const seek = ms => { start = performance.now() - ms; };
+  if (reduce) seek(T.end + 2000);
+  const skip = () => { if (performance.now() - start < T.end) seek(T.end); };
+  svg.addEventListener('click', e => { if (!e.target.closest('#door, .callout')) skip(); });
+  addEventListener('keydown', e => { if (e.key === 'Escape') skip(); });
+
+  const flags = {};
+  const flag = (name, on) => { if (flags[name] !== on) { flags[name] = on; document.body.classList.toggle(name, on); } };
+  const footer = document.querySelector('footer.bar');
 
   function frame(now) {
     const t = now - start;
+    const ts = now / 1000;
 
-    // camera
+    // ----- camera -----
     const pc = easeInOut(prog(t, T.cam));
-    const done = prog(t, [T.cam[1] - 400, T.cam[1] + 800]);
+    const settled = prog(t, [T.cam[1] - 400, T.cam[1] + 800]);
     sx += (mx - sx) * .05; sy += (my - sy) * .05;
     C = {};
     for (const k in K1) C[k] = lerp(K0[k], K1[k], pc);
-    C.x += sx * 0.7 * done; C.y -= sy * 0.45 * done;
-
+    C.x += sx * 0.7 * settled; C.y -= sy * 0.45 * settled;
     const zf = C.z - NEAR;
 
-    // faces
+    // ----- right wall: flash, then slide open (away from the room) -----
+    const wo = easeInOut(prog(t, T.wallOpen));
+    const Rw = (y, z) => [W2 + wo * 16, y, z];
     const F = {
       back:  [[-W2, 0, 0], [W2, 0, 0], [W2, H, 0], [-W2, H, 0]],
       floor: [[-W2, 0, 0], [W2, 0, 0], [W2, 0, zf], [-W2, 0, zf]],
       ceil:  [[-W2, H, 0], [W2, H, 0], [W2, H, zf], [-W2, H, zf]],
       left:  [[-W2, 0, 0], [-W2, H, 0], [-W2, H, zf], [-W2, 0, zf]],
-      right: [[W2, 0, 0], [W2, H, 0], [W2, H, zf], [W2, 0, zf]],
+      right: [Rw(0, 0), Rw(H, 0), Rw(H, zf), Rw(0, zf)],
     };
     const faceOp = easeOut(prog(t, T.faces));
     const edgeP = easeInOut(prog(t, T.edges));
@@ -367,48 +522,66 @@
       edgeEls[n].setAttribute('points', s);
       edgeEls[n].setAttribute('stroke-dashoffset', 1 - edgeP);
     }
+    $('rightFlash').setAttribute('points', poly(...F.right));
+    const fl = prog(t, T.wallFlash);
+    $('rightFlash').style.opacity = (fl > 0 ? (fl < .35 ? 1 : 1 - easeOut((fl - .35) / .65) * .4) : 0) * (1 - easeOut(prog(t, [T.wallOpen[0] + 300, T.wallOpen[1]])));
     $('floorClipPoly').setAttribute('points', poly(...F.floor));
 
-    // back-wall group: affine because the wall is parallel to the image plane
+    // ----- back wall: affine (wall is parallel to the image plane) -----
     const s = C.f / C.z;
     const tx = C.px - s * C.x, ty = C.py + s * C.y;
-    $('wall').setAttribute('transform', `matrix(${s} 0 0 ${s} ${tx} ${ty})`);
-    reflWrap.setAttribute('transform', `matrix(${s} 0 0 ${s} ${tx} ${ty})`);
+    const wallM = `matrix(${s} 0 0 ${s} ${tx} ${ty})`;
+    $('wall').setAttribute('transform', wallM);
+    $('wallTop').setAttribute('transform', wallM);
+    reflWrap.setAttribute('transform', wallM);
     reflWrap.style.opacity = 1 - easeInOut(prog(t, T.reflect));
+    paneClips.forEach(r => r.setAttribute('transform', wallM));
+
+    // ----- logo: rides the wall, then shifts up into the corner -----
+    const lw = { x: tx + s * LOGO.x, y: ty - s * LOGO.y, k: s * LOGO.size };
+    const em = clamp(vw * 0.021, 22, 34);
+    const lh = { x: clamp(vw * 0.025, 16, 40) - sx * 6, y: 22 + em * 0.8 - sy * 4, k: em };
+    const pl = easeInOut(prog(t, T.logo));
+    $('logo').setAttribute('transform', `translate(${lerp(lw.x, lh.x, pl)} ${lerp(lw.y, lh.y, pl)}) scale(${lerp(lw.k, lh.k, pl)})`);
     $('logo').style.opacity = easeOut(prog(t, [150, 900]));
 
-    // window: outline draw → glass fill → sun sweep
+    // ----- window -----
     const po = prog(t, T.outline);
     $('winFrame').setAttribute('stroke-dashoffset', 1 - easeInOut(po));
     panes.forEach((p, i) => {
-      const k = (p.r + p.c) / 6;
-      const o = easeOut(clamp(po * 1.6 - k * 0.6));
+      const o = easeOut(clamp(po * 1.6 - (p.r + p.c) / 6 * 0.6));
       paneEdges[i].setAttribute('stroke-dashoffset', 1 - o);
       paneEdges[i].style.opacity = .85 - .6 * prog(t, T.fill);
-      const f = easeOut(clamp(prog(t, T.fill) * 1.8 - (p.r + (3 - p.c)) / 6 * .8));
-      p.fill.style.opacity = f;
+      p.f = easeOut(clamp(prog(t, T.fill) * 1.8 - (p.r + (3 - p.c)) / 6 * .8));
+      p.fill.style.opacity = p.f;
     });
-    const ps = easeInOut(prog(t, T.sun));
-    $('sun').setAttribute('cx', lerp(WIN.x1 + 2.2, WIN.x0 + 2.05, ps));
-    $('sun').setAttribute('cy', -lerp(WIN.y1 - 0.4, WIN.y0 + 1.25, ps));
 
-    // light: sun direction sweeps, then idles with a slow drift
-    const pl = prog(t, T.light), le = easeInOut(pl);
-    const idle = t > T.light[1] ? (t - T.light[1]) / 1000 : 0;
-    A = lerp(0.95, -0.42, le) + Math.sin(idle * .35) * .05 * done;
-    B = lerp(0.12, 0.92, easeOutExpo(pl)) + Math.sin(idle * .27 + 1) * .035 * done;
-    const lightAmt = easeOut(clamp(pl * 1.6));
+    // ----- sun: rises in from the right, then drifts; it sits behind the wall so it parallaxes -----
+    const ps = easeInOut(prog(t, T.sun));
+    const idle = Math.max(0, t - T.sun[1]) / 1000;
+    const drift = clamp(idle / 3);
+    const S = {
+      x: S0.x + 5.2 * (1 - ps) + Math.sin(idle * .16) * 1.1 * drift,
+      y: S0.y - 1.6 * (1 - ps) + Math.sin(idle * .11 + .5) * .35 * drift,
+    };
+    const sp = P(S.x, S.y, -SUN.D);
+    $('sun').setAttribute('cx', sp[0].toFixed(1)); $('sun').setAttribute('cy', sp[1].toFixed(1));
+    $('sun').setAttribute('r', (C.f * SUN.R / (C.z + SUN.D)).toFixed(1));
+
+    // the light follows the sun: shadows swing as it moves
+    A = -0.32 - 0.3 * (S.x - S0.x);
+    B = clamp(0.9 + 0.24 * (S.y - S0.y), 0.3, 1.4);
+    const lightAmt = easeOut(clamp(prog(t, T.light) * 1.6));
     $('winGlow').style.opacity = 0.10 * lightAmt;
     $('fSoftBlur').setAttribute('stdDeviation', (s * 0.035).toFixed(2));
+    $('fShadowBlur').setAttribute('stdDeviation', (s * 0.02).toFixed(2));
     $('fBeamBlur').setAttribute('stdDeviation', (s * 0.22).toFixed(2));
 
     panes.forEach((p, i) => {
       const q = [toFloor(p.x0, p.y0), toFloor(p.x1, p.y0), toFloor(p.x1, p.y1), toFloor(p.x0, p.y1)];
       lightPanes[i].setAttribute('points', poly(...q));
-      lightPanes[i].style.opacity = 0.2 * lightAmt * p.fill.style.opacity;
+      lightPanes[i].style.opacity = 0.2 * lightAmt * p.f;
     });
-
-    // light volume: four sides of the prism between window and its floor projection
     const wc = [[WIN.x0, WIN.y0], [WIN.x1, WIN.y0], [WIN.x1, WIN.y1], [WIN.x0, WIN.y1]];
     for (let i = 0; i < 4; i++) {
       const a = wc[i], b = wc[(i + 1) % 4];
@@ -416,35 +589,120 @@
       beamQuads[i].style.opacity = 0.05 * lightAmt;
     }
 
-    // dust
-    const ts = now / 1000;
+    // ----- objects: pop / drop in, with shadows cast by the moving sun -----
+    OBJECTS.forEach(o => {
+      const k = clamp((t - o.at) / (o.anim === 'drop' ? 750 : 420));
+      let local = '', fill = '#0a1430', vis = t >= o.at && !o.hidden;
+      if (o.anim === 'pop') {
+        const sc = Math.max(0.001, easeOutBack(k));
+        local = `scale(${sc})`;
+        // flash: blue → navy as it lands
+        const c = clamp(k * 1.8);
+        fill = `rgb(${Math.round(lerp(31, 10, c))},${Math.round(lerp(92, 20, c))},${Math.round(lerp(255, 48, c))})`;
+      } else {
+        local = `translate(0 ${-(1 - easeOutBounce(k)) * (o.dropFrom || 6)})`;
+      }
+      if (o.flip) local += ' scale(-1 1)';
+      const hm = o.h / 2;
+      o.g.setAttribute('transform', affine(o.x, o.z, hm, false));
+      o.inner.setAttribute('transform', local);
+      o.inner.setAttribute('fill', fill); o.inner.setAttribute('stroke', fill);
+      o.g.style.display = vis ? '' : 'none';
+      o.sg.setAttribute('transform', affine(o.x, o.z, hm, true));
+      o.sinner.setAttribute('transform', local);
+      o.sg.style.opacity = vis && !o.noShadow ? 0.2 * lightAmt * clamp(k * 2) : 0;
+
+      if (o.cl) {
+        const kc = prog(t, [o.at + 350, o.at + 800]);
+        const an = P(o.x, o.rise < 0 ? -0.04 : o.h + 0.12, o.z);
+        const dir = o.dir;
+        const L = (o.cl.w || 90) + 14;
+        const p1 = [an[0] + dir * 20, an[1] - o.rise], p2 = [p1[0] + dir * L, p1[1]];
+        o.cl.line.setAttribute('points', pts([an, p1, p2]));
+        o.cl.line.setAttribute('stroke-dashoffset', 1 - easeInOut(kc));
+        o.cl.dot.setAttribute('cx', an[0]); o.cl.dot.setAttribute('cy', an[1]);
+        o.cl.text.setAttribute('x', p1[0] + dir * 6); o.cl.text.setAttribute('y', p1[1] + (o.rise < 0 ? 15 : -6));
+        o.cl.text.setAttribute('text-anchor', dir > 0 ? 'start' : 'end');
+        o.cl.text.style.opacity = easeOut(prog(t, [o.at + 600, o.at + 1000]));
+        o.cl.a.setAttribute('opacity', kc > 0 && !o.hidden ? 1 : 0);
+      }
+    });
+
+    // ----- door: flashes in on the left wall; swings open on hover -----
+    const pd = prog(t, T.door);
+    doorOpen += (doorTarget - doorOpen) * .12;
+    const phi = easeInOut(doorOpen) * 1.15;
+    const X = -W2, dw = DOOR.z1 - DOOR.z0;
+    $('doorway').setAttribute('points', poly([X, 0, DOOR.z0], [X, DOOR.h, DOOR.z0], [X, DOOR.h, DOOR.z1], [X, 0, DOOR.z1]));
+    $('doorFrame').setAttribute('points', poly([X, 0, DOOR.z0], [X, DOOR.h, DOOR.z0], [X, DOOR.h, DOOR.z1], [X, 0, DOOR.z1]));
+    $('doorClipPoly').setAttribute('points', $('doorway').getAttribute('points'));
+    const ex = X - dw * Math.sin(phi), ez = DOOR.z1 - dw * Math.cos(phi);
+    $('doorLeaf').setAttribute('points', poly([ex, 0, ez], [ex, DOOR.h, ez], [X, DOOR.h, DOOR.z1], [X, 0, DOOR.z1]));
+    $('doorSpill').setAttribute('points', poly([X, 0, DOOR.z0], [X, 0, DOOR.z1], [X + 2.2, 0, DOOR.z1 + 0.6], [X + 2.2, 0, DOOR.z0 - 0.3]));
+    $('doorSpill').style.opacity = 0.14 * doorOpen;
+    // flicker: white, navy, white, settle
+    const flick = pd <= 0 ? null : pd < .18 ? '#ffffff' : pd < .34 ? '#0a1430' : pd < .5 ? '#ffffff' : '#0a1430';
+    $('door').setAttribute('opacity', flick ? 1 : 0);
+    if (flick) $('doorLeaf').setAttribute('fill', flick);
+    $('cta').classList.toggle('open', doorOpen > .5);
+    if (!compact) {
+      const dp = P(X, 0.35, DOOR.z1);
+      const cta = $('cta');
+      cta.style.left = (dp[0] + 14) + 'px';
+      cta.style.top = (dp[1] - 16) + 'px';
+    }
+
+    // ----- dust -----
     for (const d of dust) {
       const u = (d.u + Math.sin(ts * d.sp + d.ph) * .03 + 1) % 1;
       const v = (d.v + ts * d.sp * .02) % 1;
       const wx = lerp(WIN.x0, WIN.x1, u), wy = lerp(WIN.y0, WIN.y1, v);
       const ft = (d.t + ts * .012 * d.s) % 1;
-      const fl = toFloor(wx, wy);
-      const X = lerp(wx, fl[0], ft), Y = lerp(wy, 0, ft), Z = lerp(0, fl[2], ft);
-      const pp = P(X, Y, Z);
+      const fp = toFloor(wx, wy);
+      const Z = lerp(0, fp[2], ft);
+      const pp = P(lerp(wx, fp[0], ft), lerp(wy, 0, ft), Z);
       d.n.setAttribute('cx', pp[0].toFixed(1)); d.n.setAttribute('cy', pp[1].toFixed(1));
       d.n.setAttribute('r', (C.f / (C.z - Z) * .012 * d.s).toFixed(2));
       d.n.style.opacity = lightAmt * .35 * Math.sin(ft * Math.PI);
     }
 
-    if (!uiShown && t > T.ui) { uiShown = true; document.body.classList.add('ready'); }
+    // ----- bands: sweep in and rotate into place, text runs along them -----
+    const diag = Math.hypot(vw, vh);
+    const band = (id, [t0, t1], from, to, thick, speed, key) => {
+      const e = easeOut(prog(t, [t0, t1])), gEl = $(id);
+      const cx = lerp(from.x, to.x, e) - sx * to.par, cy = lerp(from.y, to.y, e) - sy * to.par * .6;
+      gEl.setAttribute('transform', `translate(${cx} ${cy}) rotate(${lerp(from.a, to.a, e)})`);
+      gEl.setAttribute('opacity', t > t0 ? 1 : 0);
+      const r = gEl.querySelector('rect'), tx_ = gEl.querySelector('text');
+      r.setAttribute('x', -diag * 1.5); r.setAttribute('width', diag * 3);
+      r.setAttribute('y', -thick / 2); r.setAttribute('height', thick);
+      const w = bandWidths[key] || 600;
+      tx_.setAttribute('x', -diag * 1.5 - ((ts * speed) % w));
+      tx_.setAttribute('y', thick * 0.2);
+      tx_.setAttribute('font-size', thick * (key === 'A' ? .62 : .26));
+    };
+    const tA = clamp(vw * 0.026, 24, 40), tB = clamp(vw * 0.05, 40, 78);
+    const aEnd = portraitMode ? { x: 0.5 * vw, y: 0.735 * vh, a: -8, par: 20 } : { x: 0.33 * vw, y: 0.6 * vh, a: 66, par: 30 };
+    const bEnd = portraitMode ? { x: 0.6 * vw, y: 0.115 * vh, a: -14, par: 30 } : { x: 0.52 * vw, y: 0.02 * vh, a: -14, par: 45 };
+    band('bandA', T.bandA, { x: -0.25 * vw, y: 0.95 * vh, a: 18 }, aEnd, tA, 26, 'A');
+    band('bandB', T.bandB, { x: 0.65 * vw, y: 0.75 * vh, a: -42 }, bEnd, tB, 18, 'B');
+
+    // ----- UI states -----
+    flag('menu-in', t > T.menu);
+    flag('cta-in', t > T.cta);
+    footer.style.setProperty('--prog', clamp(t / T.end).toFixed(3));
+
     requestAnimationFrame(frame);
   }
 
-  $('replay').addEventListener('click', () => {
-    document.body.classList.remove('ready'); uiShown = false;
-    start = performance.now();
-  });
+  $('replay').addEventListener('click', () => { if (!reduce) seek(0); });
   addEventListener('resize', layout);
   layout();
+  measure();
+  document.fonts && document.fonts.ready.then(measure);
   requestAnimationFrame(frame);
 
-  // expose for previews/tests: jump the timeline to a given ms
-  window.__seek = ms => { start = performance.now() - ms; };
+  window.__seek = seek; // for previews/tests
 })();
 </script>
 </body>
