@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Four40 Renovations</title>
+<meta name="description" content="Four40 — home renovations, built around the light.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white: #ffffff;
+    --ink: #0b1a36;
+    --ink-soft: #4a5874;
+    --blue: #1f5cff;
+    --blue-deep: #0f3fd1;
+    --blue-pale: #e8efff;
+    --line: rgba(31, 92, 255, 0.28);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--white);
+    color: var(--ink);
+    font-family: Manrope, system-ui, sans-serif;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Scene ---------- */
+  #scene {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+  }
+  #scene .face { stroke: var(--line); stroke-width: 1; stroke-linejoin: round; }
+  #scene .edge { fill: none; stroke: var(--blue); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  #scene .wedge { fill: none; stroke: var(--blue); stroke-width: 0.022; }
+  .logo-word { font-family: Unbounded, sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+  .logo-sub  { font-family: Manrope, sans-serif; font-weight: 600; letter-spacing: 0.42em; }
+
+  /* ---------- UI overlay ---------- */
+  .ui { position: fixed; inset: 0; pointer-events: none; }
+  .ui > * { pointer-events: auto; }
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
+  .ready .reveal { opacity: 1; transform: none; }
+  .ready .reveal.d1 { transition-delay: .08s; }
+  .ready .reveal.d2 { transition-delay: .16s; }
+  .ready .reveal.d3 { transition-delay: .24s; }
+
+  nav.top {
+    position: absolute; top: 28px; right: 36px;
+    display: flex; gap: 30px; align-items: center;
+    font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  }
+  nav.top a { color: var(--ink); text-decoration: none; position: relative; padding: 4px 0; }
+  nav.top a::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 1.5px;
+    background: var(--blue); transform: scaleX(0); transform-origin: left; transition: transform .35s ease;
+  }
+  nav.top a:hover::after { transform: scaleX(1); }
+
+  .hero {
+    position: absolute; left: clamp(20px, 4vw, 64px); bottom: clamp(70px, 12vh, 130px);
+    max-width: 440px;
+  }
+  .eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--blue);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .eyebrow::before { content: ""; width: 28px; height: 1.5px; background: var(--blue); }
+  .hero h1 {
+    font-family: Unbounded, sans-serif; font-weight: 500;
+    font-size: clamp(28px, 3.4vw, 50px); line-height: 1.05; letter-spacing: -0.03em;
+    margin: 14px 0 14px;
+  }
+  .hero h1 em { font-style: normal; color: var(--blue); }
+  .hero p { color: var(--ink-soft); font-size: 15px; line-height: 1.6; max-width: 380px; }
+  .cta { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+  .btn {
+    font: 600 14px/1 Manrope, sans-serif; letter-spacing: .02em;
+    padding: 15px 22px; border-radius: 999px; text-decoration: none; cursor: pointer;
+    transition: background .25s, color .25s, box-shadow .25s, transform .25s;
+  }
+  .btn.primary { background: var(--blue); color: #fff; box-shadow: 0 10px 30px -10px rgba(31,92,255,.65); }
+  .btn.primary:hover { background: var(--blue-deep); transform: translateY(-1px); }
+  .btn.ghost { color: var(--ink); background: rgba(255,255,255,.7); box-shadow: inset 0 0 0 1.5px var(--line); backdrop-filter: blur(6px); }
+  .btn.ghost:hover { box-shadow: inset 0 0 0 1.5px var(--blue); color: var(--blue); }
+
+  footer.bar {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 clamp(20px, 4vw, 64px);
+    font-size: 12px; color: var(--ink-soft); letter-spacing: .04em;
+    background: rgba(255,255,255,.82); backdrop-filter: blur(8px);
+    border-top: 1px solid var(--line);
+  }
+  footer.bar::before {
+    content: ""; position: absolute; left: 0; top: -1px; height: 2px; width: 100%;
+    background: var(--blue); transform: scaleX(0); transform-origin: left;
+    transition: transform 1.4s cubic-bezier(.7,0,.2,1);
+  }
+  .ready footer.bar::before { transform: scaleX(1); }
+  #replay {
+    background: none; border: 0; color: var(--blue); font: 600 12px Manrope, sans-serif;
+    letter-spacing: .08em; text-transform: uppercase; cursor: pointer; display: flex; gap: 8px; align-items: center;
+  }
+  #replay svg { width: 14px; height: 14px; }
+
+  @media (max-width: 760px) {
+    nav.top { top: auto; bottom: 58px; right: auto; left: 20px; gap: 18px; font-size: 11px; }
+    .hero { bottom: 100px; right: 20px; max-width: none; }
+    .hero p { font-size: 14px; }
+    footer.bar { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<svg id="scene" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <defs>
+    <linearGradient id="gFloor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3f6fc"/>
+      <stop offset="1" stop-color="#fbfcfe"/>
+    </linearGradient>
+    <linearGradient id="gLeft" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0" stop-color="#f4f7fc"/>
+      <stop offset="1" stop-color="#e6edf8"/>
+    </linearGradient>
+    <linearGradient id="gRight" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#e9eff9"/>
+      <stop offset="1" stop-color="#d4dff1"/>
+    </linearGradient>
+    <linearGradient id="gCeil" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#f8fafd"/>
+      <stop offset="1" stop-color="#eef3fa"/>
+    </linearGradient>
+    <linearGradient id="gGlass" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#2a63ff"/>
+      <stop offset="1" stop-color="#7fa6ff"/>
+    </linearGradient>
+    <radialGradient id="gSun">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".62" stop-color="#ffffff"/>
+      <stop offset=".7" stop-color="#eaf1ff"/>
+      <stop offset="1" stop-color="#eaf1ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gReflect" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f5cff" stop-opacity=".22"/>
+      <stop offset=".8" stop-color="#1f5cff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="clipFloor"><polygon id="floorClipPoly"/></clipPath>
+    <clipPath id="clipPanes" clipPathUnits="userSpaceOnUse"><g id="paneClipRects"></g></clipPath>
+    <filter id="fSoft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur id="fSoftBlur" stdDeviation="2"/></filter>
+    <filter id="fBeam" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur id="fBeamBlur" stdDeviation="10"/></filter>
+  </defs>
+
+  <!-- room faces -->
+  <g id="faces">
+    <polygon id="ceil"  class="face" fill="url(#gCeil)"/>
+    <polygon id="floor" class="face" fill="url(#gFloor)"/>
+    <polygon id="left"  class="face" fill="url(#gLeft)"/>
+    <polygon id="right" class="face" fill="url(#gRight)"/>
+    <polygon id="back"  class="face" fill="#ffffff"/>
+  </g>
+
+  <!-- floor: reflection + projected window light -->
+  <g clip-path="url(#clipFloor)">
+    <g id="reflect"></g>
+    <g id="floorLight" filter="url(#fSoft)"></g>
+  </g>
+
+  <!-- back-wall content lives in wall coordinates (units, y down) -->
+  <g id="wall">
+    <g id="logo">
+      <text class="logo-word" x="0" y="0" font-size="1"><tspan fill="#0b1a36">FOUR</tspan><tspan fill="#1f5cff">40</tspan></text>
+      <text class="logo-sub" x="0.04" y="0.5" font-size="0.25" fill="#0b1a36">RENOVATIONS</text>
+    </g>
+    <g id="window">
+      <rect id="winGlow" fill="#1f5cff" opacity="0"/>
+      <g id="panes"></g>
+      <g clip-path="url(#clipPanes)"><circle id="sun" r="1.7" fill="url(#gSun)"/></g>
+      <g id="paneEdges"></g>
+      <rect id="winFrame" class="wedge" fill="none" pathLength="1"/>
+    </g>
+  </g>
+
+  <!-- light volume + dust, over everything in the room -->
+  <g id="beam" filter="url(#fBeam)" style="mix-blend-mode:multiply"></g>
+  <g id="dust"></g>
+
+  <!-- room edges that draw themselves in -->
+  <g id="edges"></g>
+</svg>
+
+<div class="ui" id="ui">
+  <nav class="top reveal" aria-label="Primary">
+    <a href="#services">Services</a>
+    <a href="#projects">Projects</a>
+    <a href="#process">Process</a>
+    <a href="#contact">Contact</a>
+  </nav>
+
+  <section class="hero">
+    <div class="eyebrow reveal">Home renovations</div>
+    <h1 class="reveal d1">Built around<br><em>the light.</em></h1>
+    <p class="reveal d2">Kitchens, bathrooms, extensions and whole-home renovations — designed and delivered by Four40.</p>
+    <div class="cta reveal d3">
+      <a class="btn primary" href="#contact">Book a consultation</a>
+      <a class="btn ghost" href="#projects">View projects</a>
+    </div>
+  </section>
+
+  <footer class="bar">
+    <span>© Four40 Renovations</span>
+    <button id="replay" type="button" aria-label="Replay intro animation">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+      Replay
+    </button>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const NS = 'http://www.w3.org/2000/svg';
+  const $ = id => document.getElementById(id);
+  const svg = $('scene');
+
+  // ---------- Room (world units). x: left→right, y: floor→ceiling, z: back wall(0) → camera ----------
+  const W2 = 5, H = 6.5;
+  const WIN = { x0: -0.4, x1: 2.6, y0: 2.4, y1: 5.4, cols: 4, rows: 4, gap: 0.07 };
+  const LOGO = { x: -4.55, y: 5.55, size: 0.78 };
+
+  // ---------- Timeline (ms) ----------
+  const T = {
+    edges: [0, 900], faces: [200, 1000], cam: [150, 2900], reflect: [700, 2300],
+    outline: [2500, 3200], fill: [2950, 3750], sun: [3350, 4900], light: [3800, 6400], ui: 5000,
+  };
+
+  // ---------- easing ----------
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const prog = (t, [a, b]) => clamp((t - a) / (b - a));
+  const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const easeOutExpo = t => t >= 1 ? 1 : 1 - Math.pow(2, -10 * t);
+
+  // ---------- camera keyframes depend on viewport ----------
+  let vw = 0, vh = 0, K0, K1;
+  function layout() {
+    vw = innerWidth; vh = innerHeight;
+    svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
+    const portrait = vw / vh < 0.9;
+    if (portrait) {
+      const U = vw;
+      K1 = { x: 0.3, y: 2.6, z: 11, f: 0.9 * U, px: 0.5 * vw, py: 0.3 * vh };
+      K0 = { x: 0, y: H / 2, z: 20, f: 1.0 * U, px: 0.5 * vw, py: 0.42 * vh };
+    } else {
+      const U = Math.min(vw, 1.78 * vh);
+      K1 = { x: -3.0, y: 2.2, z: 10, f: 0.56 * U, px: 0.5 * vw - 0.205 * U, py: 0.42 * vh };
+      K0 = { x: 0, y: H / 2, z: 18, f: 0.62 * U, px: 0.5 * vw, py: 0.5 * vh };
+    }
+  }
+
+  // ---------- projection ----------
+  let C; // current camera
+  const NEAR = 0.12;
+  const P = (x, y, z) => {
+    const d = Math.max(C.z - z, NEAR);
+    return [C.px + C.f * (x - C.x) / d, C.py - C.f * (y - C.y) / d];
+  };
+  const pts = arr => arr.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const poly = (...p3) => pts(p3.map(p => P(...p)));
+
+  // ---------- build static DOM ----------
+  const el = (tag, attrs, parent) => {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    parent && parent.appendChild(n);
+    return n;
+  };
+
+  const edgeNames = ['back', 'left', 'right', 'floor', 'ceil'];
+  const edgeEls = {};
+  edgeNames.forEach(n => edgeEls[n] = el('polygon', { class: 'edge', pathLength: 1, 'stroke-dasharray': 1, opacity: .55 }, $('edges')));
+
+  // window panes (wall-space, y down => yd = -y)
+  const panes = [], paneEdges = [], lightPanes = [];
+  const pw = (WIN.x1 - WIN.x0) / WIN.cols, ph = (WIN.y1 - WIN.y0) / WIN.rows, g = WIN.gap;
+  for (let r = 0; r < WIN.rows; r++) for (let c = 0; c < WIN.cols; c++) {
+    const x0 = WIN.x0 + c * pw + g, x1 = WIN.x0 + (c + 1) * pw - g;
+    const y1 = WIN.y1 - r * ph - g, y0 = WIN.y1 - (r + 1) * ph + g; // world y (up)
+    const rect = { x: x0, y: -y1, width: x1 - x0, height: y1 - y0 };
+    panes.push({ r, c, x0, x1, y0, y1, fill: el('rect', { ...rect, fill: 'url(#gGlass)', opacity: 0 }, $('panes')) });
+    el('rect', rect, $('paneClipRects'));
+    paneEdges.push(el('rect', { ...rect, class: 'wedge', pathLength: 1, 'stroke-dasharray': 1, 'stroke-dashoffset': 1 }, $('paneEdges')));
+    lightPanes.push(el('polygon', { fill: '#1f5cff' }, $('floorLight')));
+  }
+  const fr = { x: WIN.x0 - 0.06, y: -WIN.y1 - 0.06, width: WIN.x1 - WIN.x0 + 0.12, height: WIN.y1 - WIN.y0 + 0.12 };
+  for (const k in fr) $('winFrame').setAttribute(k, fr[k]);
+  $('winFrame').setAttribute('stroke-dasharray', 1);
+  for (const k in fr) $('winGlow').setAttribute(k, fr[k]);
+
+  $('logo').setAttribute('transform', `translate(${LOGO.x} ${-LOGO.y}) scale(${LOGO.size})`);
+
+  // reflection = logo mirrored about the floor plane (y -> -y)
+  const refl = $('logo').cloneNode(true); refl.removeAttribute('id');
+  refl.setAttribute('transform', `translate(${LOGO.x} ${LOGO.y}) scale(${LOGO.size} ${-LOGO.size})`);
+  refl.querySelectorAll('tspan,text').forEach(t => t.setAttribute('fill', 'url(#gReflect)'));
+  const reflWrap = el('g', {}, $('reflect')); reflWrap.appendChild(refl);
+
+  const beamQuads = [0, 1, 2, 3].map(() => el('polygon', { fill: '#1f5cff' }, $('beam')));
+
+  // dust motes floating inside the light volume
+  const dust = Array.from({ length: 26 }, () => ({
+    u: Math.random(), v: Math.random(), t: Math.random(), s: .6 + Math.random() * .9,
+    ph: Math.random() * 6.28, sp: .15 + Math.random() * .35,
+    n: el('circle', { fill: '#1f5cff' }, $('dust')),
+  }));
+
+  // ---------- light (sun) direction: L = (a, -1, b). Wall point (x,y,0) lands on floor at (x + a*y, 0, b*y) ----------
+  let A = 0, B = 0;
+  const toFloor = (x, y) => [x + A * y, 0, B * y];
+
+  // ---------- pointer parallax (the 2.5D part) ----------
+  let mx = 0, my = 0, sx = 0, sy = 0;
+  addEventListener('pointermove', e => { mx = e.clientX / vw - .5; my = e.clientY / vh - .5; });
+  addEventListener('deviceorientation', e => {
+    if (e.gamma == null) return;
+    mx = clamp(e.gamma / 40, -.5, .5); my = clamp((e.beta - 45) / 40, -.5, .5);
+  });
+
+  // ---------- frame ----------
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let start = performance.now();
+  if (reduce) start -= 99999;
+  let uiShown = false;
+
+  function frame(now) {
+    const t = now - start;
+
+    // camera
+    const pc = easeInOut(prog(t, T.cam));
+    const done = prog(t, [T.cam[1] - 400, T.cam[1] + 800]);
+    sx += (mx - sx) * .05; sy += (my - sy) * .05;
+    C = {};
+    for (const k in K1) C[k] = lerp(K0[k], K1[k], pc);
+    C.x += sx * 0.7 * done; C.y -= sy * 0.45 * done;
+
+    const zf = C.z - NEAR;
+
+    // faces
+    const F = {
+      back:  [[-W2, 0, 0], [W2, 0, 0], [W2, H, 0], [-W2, H, 0]],
+      floor: [[-W2, 0, 0], [W2, 0, 0], [W2, 0, zf], [-W2, 0, zf]],
+      ceil:  [[-W2, H, 0], [W2, H, 0], [W2, H, zf], [-W2, H, zf]],
+      left:  [[-W2, 0, 0], [-W2, H, 0], [-W2, H, zf], [-W2, 0, zf]],
+      right: [[W2, 0, 0], [W2, H, 0], [W2, H, zf], [W2, 0, zf]],
+    };
+    const faceOp = easeOut(prog(t, T.faces));
+    const edgeP = easeInOut(prog(t, T.edges));
+    for (const n of edgeNames) {
+      const s = poly(...F[n]);
+      $(n).setAttribute('points', s);
+      $(n).style.opacity = faceOp;
+      edgeEls[n].setAttribute('points', s);
+      edgeEls[n].setAttribute('stroke-dashoffset', 1 - edgeP);
+    }
+    $('floorClipPoly').setAttribute('points', poly(...F.floor));
+
+    // back-wall group: affine because the wall is parallel to the image plane
+    const s = C.f / C.z;
+    const tx = C.px - s * C.x, ty = C.py + s * C.y;
+    $('wall').setAttribute('transform', `matrix(${s} 0 0 ${s} ${tx} ${ty})`);
+    reflWrap.setAttribute('transform', `matrix(${s} 0 0 ${s} ${tx} ${ty})`);
+    reflWrap.style.opacity = 1 - easeInOut(prog(t, T.reflect));
+    $('logo').style.opacity = easeOut(prog(t, [150, 900]));
+
+    // window: outline draw → glass fill → sun sweep
+    const po = prog(t, T.outline);
+    $('winFrame').setAttribute('stroke-dashoffset', 1 - easeInOut(po));
+    panes.forEach((p, i) => {
+      const k = (p.r + p.c) / 6;
+      const o = easeOut(clamp(po * 1.6 - k * 0.6));
+      paneEdges[i].setAttribute('stroke-dashoffset', 1 - o);
+      paneEdges[i].style.opacity = .85 - .6 * prog(t, T.fill);
+      const f = easeOut(clamp(prog(t, T.fill) * 1.8 - (p.r + (3 - p.c)) / 6 * .8));
+      p.fill.style.opacity = f;
+    });
+    const ps = easeInOut(prog(t, T.sun));
+    $('sun').setAttribute('cx', lerp(WIN.x1 + 2.2, WIN.x0 + 2.05, ps));
+    $('sun').setAttribute('cy', -lerp(WIN.y1 - 0.4, WIN.y0 + 1.25, ps));
+
+    // light: sun direction sweeps, then idles with a slow drift
+    const pl = prog(t, T.light), le = easeInOut(pl);
+    const idle = t > T.light[1] ? (t - T.light[1]) / 1000 : 0;
+    A = lerp(0.95, -0.42, le) + Math.sin(idle * .35) * .05 * done;
+    B = lerp(0.12, 0.92, easeOutExpo(pl)) + Math.sin(idle * .27 + 1) * .035 * done;
+    const lightAmt = easeOut(clamp(pl * 1.6));
+    $('winGlow').style.opacity = 0.10 * lightAmt;
+    $('fSoftBlur').setAttribute('stdDeviation', (s * 0.035).toFixed(2));
+    $('fBeamBlur').setAttribute('stdDeviation', (s * 0.22).toFixed(2));
+
+    panes.forEach((p, i) => {
+      const q = [toFloor(p.x0, p.y0), toFloor(p.x1, p.y0), toFloor(p.x1, p.y1), toFloor(p.x0, p.y1)];
+      lightPanes[i].setAttribute('points', poly(...q));
+      lightPanes[i].style.opacity = 0.2 * lightAmt * p.fill.style.opacity;
+    });
+
+    // light volume: four sides of the prism between window and its floor projection
+    const wc = [[WIN.x0, WIN.y0], [WIN.x1, WIN.y0], [WIN.x1, WIN.y1], [WIN.x0, WIN.y1]];
+    for (let i = 0; i < 4; i++) {
+      const a = wc[i], b = wc[(i + 1) % 4];
+      beamQuads[i].setAttribute('points', poly([a[0], a[1], 0], [b[0], b[1], 0], toFloor(b[0], b[1]), toFloor(a[0], a[1])));
+      beamQuads[i].style.opacity = 0.05 * lightAmt;
+    }
+
+    // dust
+    const ts = now / 1000;
+    for (const d of dust) {
+      const u = (d.u + Math.sin(ts * d.sp + d.ph) * .03 + 1) % 1;
+      const v = (d.v + ts * d.sp * .02) % 1;
+      const wx = lerp(WIN.x0, WIN.x1, u), wy = lerp(WIN.y0, WIN.y1, v);
+      const ft = (d.t + ts * .012 * d.s) % 1;
+      const fl = toFloor(wx, wy);
+      const X = lerp(wx, fl[0], ft), Y = lerp(wy, 0, ft), Z = lerp(0, fl[2], ft);
+      const pp = P(X, Y, Z);
+      d.n.setAttribute('cx', pp[0].toFixed(1)); d.n.setAttribute('cy', pp[1].toFixed(1));
+      d.n.setAttribute('r', (C.f / (C.z - Z) * .012 * d.s).toFixed(2));
+      d.n.style.opacity = lightAmt * .35 * Math.sin(ft * Math.PI);
+    }
+
+    if (!uiShown && t > T.ui) { uiShown = true; document.body.classList.add('ready'); }
+    requestAnimationFrame(frame);
+  }
+
+  $('replay').addEventListener('click', () => {
+    document.body.classList.remove('ready'); uiShown = false;
+    start = performance.now();
+  });
+  addEventListener('resize', layout);
+  layout();
+  requestAnimationFrame(frame);
+
+  // expose for previews/tests: jump the timeline to a given ms
+  window.__seek = ms => { start = performance.now() - ms; };
+})();
+</script>
+</body>
+</html>
