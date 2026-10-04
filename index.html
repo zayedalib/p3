@@ -61,18 +61,16 @@
   /* Scroll-linked effects run on the browser's compositor when supported (smooth during iOS momentum scrolling).
      The page's scroll range is exactly the footer's height, so percentages below are "how far the footer is up". */
   @supports (animation-timeline: scroll()) {
-    #wash, #veil, #hero { animation-timeline: scroll(root block); animation-fill-mode: both; animation-duration: 1ms; }
-    #wash { animation-name: washUp; }
-    #veil { animation-name: veilIn; }
-    #hero { animation-name: heroBack; animation-timing-function: linear; }
+    #hero { animation: heroBack 1ms linear both; animation-timeline: scroll(root block); }
     .compact #hero { animation-name: none; }
   }
-  @keyframes washUp {
-    0%   { transform: translate3d(0, 130%, 0); animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
-    78%  { transform: translate3d(0, -130%, 0); }
-    100% { transform: translate3d(0, -130%, 0); }
-  }
-  @keyframes veilIn { 0% { opacity: 0; } 40% { opacity: .05; } 56% { opacity: .92; } 100% { opacity: 1; } }
+  /* the wash is a fixed, timed sequence: triggered once on the way down, reversed on the way back up */
+  .wash-in #wash  { animation: washUp .95s cubic-bezier(.65, 0, .35, 1) both; }
+  .wash-out #wash { animation: washDown .95s cubic-bezier(.65, 0, .35, 1) both; }
+  .wash-in #veil  { opacity: .92; transition: opacity .25s linear .42s; }
+  .wash-out #veil { opacity: 0;   transition: opacity .25s linear .42s; }
+  @keyframes washUp   { from { transform: translate3d(0, 130%, 0); } to { transform: translate3d(0, -130%, 0); } }
+  @keyframes washDown { from { transform: translate3d(0, -130%, 0); } to { transform: translate3d(0, 130%, 0); } }
   @keyframes heroBack { 0% { transform: translate3d(0, 0, 0) scale(1); } 85%, 100% { transform: translate3d(0, 2vh, 0) scale(.9); } }
   /* phones: no live blur behind the footer (the moving wash would be re-blurred every frame) */
   .compact .site { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(255, 255, 255, .9); }
@@ -577,6 +575,14 @@
     ]},
   };
   // half-width of each piece's footprint (world units), for contact shadows and label avoidance
+  // phone label slots: which side of the piece, which foot/corner the leader starts from (-1 left, +1 right),
+  // which way the label runs, and how far the underline sits from the piece (px at the reference phone size)
+  const PHONE_LABEL = {
+    island:   { above: true,  foot: 0,  dir: 1,  drop: 22 },
+    ladder:   { above: false, foot: -1, dir: -1, drop: 24 },
+    armchair: { above: false, foot: 1,  dir: 1,  drop: 24 },
+    tub:      { above: false, foot: 1,  dir: -1, drop: 38 },
+  };
   const FOOT = { ladder: .45, island: 2.0, tub: .95, armchair: .55, lamp: .2, plant: .22, pendants: .95 };
 
   // Placement per layout — L: landscape, P: portrait (null = not shown) — as
@@ -713,28 +719,17 @@
       placed.push([a[0], b[0], a[1], b[1]]);
     }
     if (compact) {
-      // phones: centred tags right at each piece; only nudged apart from each other, never flipped
-      const tags = [];
+      // phones: each label has a fixed, hand-designed slot (the portrait room scales uniformly, so these hold on
+      // every phone). Leaders start at a foot/corner of the piece and slant away, so no two lines can cross.
       for (const o of OBJECTS) {
         if (!o.cl || o.hidden) { o.plan = null; continue; }
-        // slanted leader: dot at the piece's foot → short diagonal down → label on an underline
-        const an = P(o.x, 0, o.z);
-        const L = (o.cl.w || 90) + 10;
-        let dir = an[0] < vw / 2 ? 1 : -1;
-        let ly = an[1] + 24;
-        const box = () => { const x0 = an[0] + dir * 18, x1 = x0 + dir * L; return [Math.min(x0, x1), Math.max(x0, x1), ly - 18, ly + 4]; };
-        const fits = () => { const b = box(); return b[0] >= 8 && b[1] <= vw - 8; };
-        if (!fits()) dir = -dir;
-        for (let pass = 0; pass < 8; pass++) {
-          const hit = tags.find(q => { const b = box(); return b[0] < q[1] + 8 && b[1] + 8 > q[0] && b[2] < q[3] + 6 && b[3] + 6 > q[2]; });
-          if (!hit) break;
-          dir = -dir;                                  // try the other side first
-          if (fits() && !tags.some(q => { const b = box(); return b[0] < q[1] + 8 && b[1] + 8 > q[0] && b[2] < q[3] + 6 && b[3] + 6 > q[2]; })) break;
-          dir = -dir; if (!fits()) dir = -dir;
-          ly = hit[3] + 6 + 18;                        // then drop a row
-        }
-        tags.push(box());
-        o.plan = { tag: true, dir, dy: ly - an[1] };
+        const sp = PHONE_LABEL[o.shape];
+        const ax = o.x + sp.foot * FOOT[o.shape] * .7, ay = sp.above ? o.h + .05 : 0;
+        const an = P(ax, ay, o.z), L = (o.cl.w || 90) + 10;
+        let dir = sp.dir;
+        const x0 = an[0] + dir * 18, x1 = x0 + dir * L;
+        if (Math.min(x0, x1) < 8 || Math.max(x0, x1) > vw - 8) dir = -dir;   // fallback for very narrow screens
+        o.plan = { tag: true, dir, ax, ay, dy: (sp.above ? -1 : 1) * sp.drop * (C.f / 335) };
       }
       C = saved;
       return;
@@ -956,8 +951,8 @@
       if (!o.cl || o.hidden || !o.plan) { o.cl && o.cl.a.setAttribute('opacity', 0); continue; }
       const kc = prog(t, [o.at + 350, o.at + 800]);
       if (o.plan.tag) {
-        const { dir, dy } = o.plan;
-        const an = P(o.x, 0, o.z);
+        const { dir, dy, ax, ay } = o.plan;
+        const an = P(ax, ay, o.z);
         const L = (o.cl.w || 90) + 10, ly = an[1] + dy;
         const p1 = [an[0] + dir * 18, ly], p2 = [p1[0] + dir * L, ly];
         o.cl.chip.setAttribute('width', 0);
@@ -1067,15 +1062,17 @@
   addEventListener('resize', () => { footerH = siteFooter.offsetHeight; });
   // one style write per frame, transforms/opacity only (GPU-composited, no layout or repaint)
   const nativeScrollFx = CSS.supports && CSS.supports('animation-timeline: scroll()');
+  let washState = 'idle';
   const applyScroll = () => {
     scrollQueued = false;
     collapse = clamp(scrollY / (footerH * .85));
-    if (nativeScrollFx) return;   // CSS scroll timeline drives the visuals; we only need `collapse` to pause the room
+    // timed wash: plays its full sequence once scrolling starts, reverses when back at the top
+    const down = scrollY > 40, top = scrollY < 12;
+    if (down && washState !== 'in') { washState = 'in'; hero.classList.remove('wash-out'); void washEl.offsetWidth; hero.classList.add('wash-in'); }
+    else if (top && washState === 'in') { washState = 'out'; hero.classList.remove('wash-in'); void washEl.offsetWidth; hero.classList.add('wash-out'); }
+    if (nativeScrollFx) return;   // CSS scroll timeline drives the card scale; we only need `collapse` to pause the room
     hero.style.transform = `translate3d(0, ${(collapse * 2).toFixed(3)}vh, 0) scale(${(1 - collapse * .1).toFixed(4)})`;
     // wash: rises from below, covers the room mid-way, then wipes off the top; the room stays faded behind the glass
-    const w = easeInOut(clamp(collapse / .92));
-    washEl.style.transform = `translate3d(0, ${(130 - 260 * w).toFixed(2)}%, 0)`;
-    veilEl.style.opacity = (clamp((w - .45) / .2) * .9 + collapse * .1).toFixed(3);
   };
   const onScroll = () => { if (!scrollQueued) { scrollQueued = true; requestAnimationFrame(applyScroll); } };
   addEventListener('scroll', onScroll, { passive: true });
