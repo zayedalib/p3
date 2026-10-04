@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Four40 Renovations</title>
 <meta name="description" content="Four40 — home renovations, built around the light.">
 <meta name="theme-color" content="#ffffff">
@@ -27,6 +27,15 @@
     --blue: #1f5cff;
     --blue-deep: #0f3fd1;
     --line: rgba(31, 92, 255, 0.28);
+    /* safe areas (notch / home indicator) — the room fills the whole screen, controls stay clear */
+    --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
+    /* glass */
+    --glass: rgba(255, 255, 255, .5);
+    --glass-strong: rgba(255, 255, 255, .66);
+    --glass-edge: rgba(255, 255, 255, .8);
+    --glass-blur: blur(14px) saturate(1.6);
+    --glass-shadow: 0 10px 30px -14px rgba(15, 40, 120, .32), inset 0 1px 0 rgba(255, 255, 255, .85);
     --rodin: "Rodin Pro", "Hiragino Kaku Gothic ProN", "Hiragino Sans", system-ui, sans-serif;
     --mono: var(--rodin);
     --display: var(--rodin);
@@ -66,7 +75,14 @@
   .ui a, .ui button { pointer-events: auto; }
 
   /* menu revealed behind the opened right wall */
-  .menu { position: absolute; top: 30vh; display: flex; flex-direction: column; gap: 6px; }
+  .menu { position: absolute; top: 30vh; display: flex; flex-direction: column; gap: 6px; padding: 18px 18px 18px 10px; border-radius: 3px; }
+  .menu::before {
+    content: ""; position: absolute; inset: 0; z-index: -2; border-radius: inherit;
+    background: var(--glass); border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow);
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+    opacity: 0; transform: translateX(24px); transition: opacity .6s, transform .8s cubic-bezier(.2,.9,.25,1);
+  }
+  .menu-in .menu::before { opacity: 1; transform: none; }
   .menu .label {
     font-size: 10px; letter-spacing: .3em; color: var(--blue); text-transform: uppercase; margin-bottom: 14px;
     opacity: 0; transition: opacity .6s;
@@ -109,18 +125,24 @@
     text-decoration: none; font: 500 11px var(--mono); letter-spacing: .16em; text-transform: uppercase;
     opacity: 0; transition: opacity .4s; white-space: nowrap;
   }
-  #cta span { background: var(--ink); color: #fff; padding: 9px 12px 9px 14px; transform: skewX(-12deg); }
+  #cta span {
+    background: rgba(10, 20, 48, .9); color: #fff; padding: 9px 12px 9px 14px; transform: skewX(-12deg);
+    -webkit-backdrop-filter: blur(10px) saturate(1.4); backdrop-filter: blur(10px) saturate(1.4);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 10px 26px -12px rgba(10, 20, 48, .55);
+  }
   #cta span b { display: inline-block; transform: skewX(12deg); font-weight: 500; }
   #cta i { background: var(--blue); color: #fff; font-style: normal; padding: 9px 11px; transform: skewX(-12deg); margin-left: 3px; transition: transform .3s; }
   #cta:hover i, #cta.open i { transform: skewX(-12deg) translateX(4px); }
   .cta-in #cta { opacity: 1; }
 
   footer.bar {
-    position: absolute; left: 0; right: 0; bottom: 0; height: 40px;
+    position: absolute; left: 0; right: 0; bottom: 0; height: calc(40px + var(--sab)); padding-bottom: var(--sab);
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 clamp(16px, 3vw, 48px);
+    padding-left: calc(clamp(16px, 3vw, 48px) + var(--sal)); padding-right: calc(clamp(16px, 3vw, 48px) + var(--sar));
     font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-soft);
-    background: #fff; border-top: 1px solid var(--line);
+    background: var(--glass-strong); border-top: 1px solid var(--glass-edge);
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+    box-shadow: 0 -10px 30px -18px rgba(15, 40, 120, .25), inset 0 1px 0 rgba(31, 92, 255, .14);
   }
   footer.bar::before {
     content: ""; position: absolute; left: 0; top: -1px; height: 2px; width: 100%;
@@ -131,11 +153,14 @@
   #replay svg { width: 13px; height: 13px; }
 
   /* compact layout (phones): menu becomes a 2×2 grid of large buttons, CTA becomes a full-width bar */
-  .compact .menu { top: auto !important; left: 16px !important; right: 16px; bottom: 54px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .compact .menu { top: auto !important; left: calc(16px + var(--sal)) !important; right: calc(16px + var(--sar)); bottom: calc(54px + var(--sab)); display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0; }
+  .compact .menu::before { display: none; }
   .compact .menu .label { display: none; }
   .compact .menu a {
     --menu-size: 15px; min-height: 50px; padding: 0 14px; gap: 10px; align-items: center;
-    background: rgba(255,255,255,.92); box-shadow: inset 0 0 0 1.5px rgba(31,92,255,.45);
+    background: var(--glass); border-radius: 3px;
+    box-shadow: inset 0 0 0 1px rgba(31,92,255,.38), inset 0 1px 0 rgba(255,255,255,.9), 0 10px 24px -14px rgba(15,40,120,.35);
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
     -webkit-tap-highlight-color: transparent;
   }
   .compact .menu a::before { transform: skewX(0) scaleX(0); }
@@ -145,13 +170,13 @@
   .compact .menu a:active .n { color: #fff; }
   .compact .menu a:active::before { transform: skewX(0) scaleX(1); transition-duration: .12s; }
   .compact .menu a .n { font-size: 12px; }
-  .compact #cta { left: 16px !important; right: 16px; top: auto !important; bottom: 170px; height: 54px; font-size: 13px; -webkit-tap-highlight-color: transparent; }
+  .compact #cta { left: calc(16px + var(--sal)) !important; right: calc(16px + var(--sar)); top: auto !important; bottom: calc(170px + var(--sab)); height: 54px; font-size: 13px; -webkit-tap-highlight-color: transparent; }
   .compact #cta span { flex: 1; display: flex; align-items: center; justify-content: center; transform: none; padding: 0 16px; }
   .compact #cta span b { transform: none; }
   .compact #cta i { display: flex; align-items: center; justify-content: center; width: 58px; transform: none; font-size: 18px; padding: 0; }
   .compact #cta:active span { background: var(--blue); }
   .compact .callout text { font-size: 12.5px; }
-  .compact footer.bar { height: 44px; }
+  .compact footer.bar { height: calc(44px + var(--sab)); }
   .compact #replay { padding: 10px 0 10px 12px; }
 </style>
 </head>
@@ -309,14 +334,21 @@
 
   // ---------- layout / camera keyframes ----------
   let vw = 0, vh = 0, K0, K1, S0, compact = false;
+  // safe-area insets in px (0 on devices without a notch)
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;padding:var(--sat) var(--sar) var(--sab) var(--sal)';
+  document.body.appendChild(probe);
+  let SA = { t: 0, b: 0, l: 0, r: 0 };
   function layout() {
     vw = innerWidth; vh = innerHeight;
+    const cs = getComputedStyle(probe);
+    SA = { t: parseFloat(cs.paddingTop) || 0, b: parseFloat(cs.paddingBottom) || 0, l: parseFloat(cs.paddingLeft) || 0, r: parseFloat(cs.paddingRight) || 0 };
     svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
     const portrait = vw / vh < 0.9;
     if (portrait) {
       // fit the room between the logo strip and the bottom UI (band, CTA, menu row, footer)
-      const f = Math.max(150, Math.min(0.86 * vw, (vh - 372) / 1.065));
-      K1 = { x: 0.6, y: 2.6, z: 11, f, px: 0.5 * vw, py: 92 + 0.255 * f };
+      const f = Math.max(150, Math.min(0.86 * vw, (vh - 372 - SA.t - SA.b) / 1.065));
+      K1 = { x: 0.6, y: 2.6, z: 11, f, px: 0.5 * vw, py: 92 + SA.t + 0.255 * f };
       K0 = { x: 0, y: H / 2, z: 20, f: f * 1.1, px: 0.5 * vw, py: 0.45 * vh };
     } else {
       const U = Math.min(vw, 1.78 * vh);
@@ -453,7 +485,7 @@
     { shape: 'island',   L: [0.4, 2.8, -1, 20],      P: [0.6, 4.2, 1, 30],   at: 3800, anim: 'pop',  label: ['02', 'Kitchens'] },
     { shape: 'tub',      L: [3.7, 1.0, -1, 20],      P: [1.6, 7.6, -1, -24], at: 4000, anim: 'pop',  label: ['03', 'Bathrooms'] },
     { shape: 'pendants', L: [0.4, 2.8],              P: [0.6, 4.2],          at: 4150, anim: 'drop', dropFrom: 4, noShadow: 1, svc: 'Kitchens' },
-    { shape: 'armchair', L: [1.6, 5.4, -1, 20, 1],   P: [-0.6, 7.4, 1, -14], at: 4250, anim: 'pop',  label: ['04', 'Interiors'] },
+    { shape: 'armchair', L: [1.6, 5.4, -1, -16, 1],   P: [-0.6, 7.4, 1, -14], at: 4250, anim: 'pop',  label: ['04', 'Interiors'] },
     { shape: 'lamp',     L: [-2.2, 5.9],             P: null,                at: 4400, anim: 'pop', svc: 'Interiors' },
     { shape: 'plant',    L: [-4.4, 0.8],             P: [-2.0, 1.0],         at: 4500, anim: 'pop' },
   ];
@@ -524,7 +556,7 @@
         to: portrait ? { x: 0.5 * vw, y: vh - 185, a: -8, par: 20 } : { x: 0.33 * vw, y: 0.6 * vh, a: 66, par: 30 } },
       { key: 'B', time: T.bandB, thick: tB, speed: 18, fs: .26,
         from: { x: 0.65 * vw, y: 0.75 * vh, a: -42 },
-        to: portrait ? { x: 0.6 * vw, y: 58, a: -10, par: 30 } : { x: 0.52 * vw, y: 0.02 * vh, a: -14, par: 45 } },
+        to: portrait ? { x: 0.6 * vw, y: 58 + SA.t, a: -10, par: 30 } : { x: 0.52 * vw, y: 0.02 * vh, a: -14, par: 45 } },
     ];
     // portrait: no bottom band — that space goes to the buttons
     $('bandA').style.display = portrait ? 'none' : '';
@@ -691,7 +723,7 @@
     // ----- logo: rides the wall, then shifts up into the corner -----
     const lw = { x: tx + s * LOGO.x, y: ty - s * LOGO.y, k: s * LOGO.size };
     const em = clamp(vw * 0.021, 22, 34);
-    const lh = { x: clamp(vw * 0.025, 16, 40) - sx * 6, y: 22 + em * 0.8 - sy * 4, k: em };
+    const lh = { x: clamp(vw * 0.025, 16, 40) + SA.l - sx * 6, y: 22 + SA.t + em * 0.8 - sy * 4, k: em };
     const pl = easeInOut(prog(t, T.logo));
     $('logo').setAttribute('transform', `translate(${lerp(lw.x, lh.x, pl)} ${lerp(lw.y, lh.y, pl)}) scale(${lerp(lw.k, lh.k, pl)})`);
     $('logo').style.opacity = easeOut(prog(t, [150, 900]));
@@ -771,12 +803,17 @@
     });
 
     // ----- callouts: place each label, then push apart any that would overlap -----
+    // labels also steer clear of the glass menu panel (desktop)
     const placed = [];
+    if (!compact && t > T.menu) {
+      const r = $('menu').getBoundingClientRect();
+      placed.push([r.left - 6, r.right + 6, r.top - 6, r.bottom + 6]);
+    }
     for (const o of OBJECTS) {
       if (!o.cl || o.hidden) { o.cl && o.cl.a.setAttribute('opacity', 0); continue; }
       const kc = prog(t, [o.at + 350, o.at + 800]);
       // labels may not run into the bottom controls; a label that would gets flipped above its piece
-      const maxY = compact ? vh - 232 : vh - 48;
+      const maxY = compact ? vh - 232 - SA.b : vh - 48 - SA.b;
       let below = o.rise < 0 && P(o.x, 0, o.z)[1] - o.rise + 22 < maxY;
       let an = P(o.x, below ? -0.04 : o.h + 0.12, o.z);
       const L = (o.cl.w || 90) + 14;
