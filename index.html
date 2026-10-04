@@ -54,21 +54,15 @@
   /* the room is a sticky card; scrolling slides the footer over it while it collapses back */
   #hero {
     position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: var(--white);
-    transform-origin: 50% 0; will-change: transform;
-    transform: translateY(calc(var(--c, 0) * 2vh)) scale(calc(1 - var(--c, 0) * .1));
-    border-radius: calc(var(--c, 0) * 28px);
-    box-shadow: 0 30px 60px -30px rgba(15, 40, 120, calc(var(--c, 0) * .45));
+    transform-origin: 50% 0; will-change: transform; transform: translateZ(0);
   }
-  #hero::after {
-    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4;
-    background: rgba(241, 245, 252, calc(var(--fade, 0) * .9 + var(--c, 0) * .1));
-  }
+  #veil { position: absolute; inset: 0; z-index: 4; pointer-events: none; background: #f1f5fc; opacity: 0; will-change: opacity; }
   /* clean blue wipe that washes up over the room as the footer arrives, then carries on out of view */
   #wash {
     position: absolute; left: 0; right: 0; top: -14%; height: 128%; z-index: 5; pointer-events: none;
     background: linear-gradient(180deg, #3570ff 0%, #1f5cff 40%, #1546e0 100%);
     clip-path: polygon(0 7%, 100% 0, 100% 93%, 0 100%);
-    transform: translateY(var(--wy, 130%)); will-change: transform;
+    transform: translate3d(0, 130%, 0); will-change: transform;
   }
   #wash::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 9%; background: linear-gradient(180deg, rgba(255,255,255,.35), transparent); clip-path: polygon(0 78%, 100% 0, 100% 22%, 0 100%); }
 
@@ -227,7 +221,11 @@
   .compact #cta span b { transform: none; }
   .compact #cta i { display: flex; align-items: center; justify-content: center; width: 58px; transform: none; font-size: 18px; padding: 0; }
   .compact #cta:active span { background: var(--blue); }
-  .compact .callout text { font-size: 12.5px; }
+  .compact .callout text { font-size: 12px; letter-spacing: .12em; stroke-width: 0; }
+  .callout .chip { fill: rgba(255,255,255,.9); stroke: rgba(31,92,255,.45); stroke-width: 1; }
+  .callout:active .chip { fill: var(--blue); }
+  .callout:active text, .callout:active text .idx { fill: #fff; }
+  .compact .callout circle { display: none; }
   .compact footer.bar { height: calc(44px + var(--sab)); }
   .compact #replay { padding: 10px 0 10px 12px; }
 </style>
@@ -280,8 +278,7 @@
   <g clip-path="url(#clipFloor)">
     <g id="reflect"></g>
     <g id="floorLight"></g>
-    <g id="contacts"></g>
-    <g id="shadows" clip-path="url(#clipLight)"></g>
+    <g id="shadows"></g>
   </g>
 
   <!-- back-wall content in wall coordinates (world units, y down) -->
@@ -341,6 +338,7 @@
     </span>
   </footer>
 </div>
+<div id="veil" aria-hidden="true"></div>
 <div id="wash" aria-hidden="true"></div>
 </div>
 
@@ -561,8 +559,6 @@
     ]},
   };
   // half-width of each piece's footprint (world units), for contact shadows and label avoidance
-  // on phones each label is a short tag just above or below its piece
-  const TAG = { ladder: 'below', island: 'above', tub: 'below', armchair: 'below' };
   const FOOT = { ladder: .45, island: 2.0, tub: .95, armchair: .55, lamp: .2, plant: .22, pendants: .95 };
 
   // Placement per layout — L: landscape, P: portrait (null = not shown) — as
@@ -571,7 +567,7 @@
     { shape: 'ladder',   L: [-3.7, 1.2, -1, 20],     P: [3.9, 3.8, -1, -18], at: 3400, anim: 'drop', label: ['01', 'Extensions'] },
     { shape: 'island',   L: [0.4, 2.8, -1, 20],      P: [0.6, 4.2, 1, 30],   at: 3800, anim: 'pop',  label: ['02', 'Kitchens'] },
     { shape: 'tub',      L: [3.7, 1.0, -1, 20],      P: [1.6, 7.6, -1, -24], at: 4000, anim: 'pop',  label: ['03', 'Bathrooms'] },
-    { shape: 'pendants', L: [0.4, 2.8],              P: [0.6, 4.2],          at: 4150, anim: 'drop', dropFrom: 4, shadowAt: 2.95, svc: 'Kitchens' },
+    { shape: 'pendants', L: [0.4, 2.8],              P: [0.6, 4.2],          at: 4150, anim: 'drop', dropFrom: 4, noShadow: 1, svc: 'Kitchens' },
     { shape: 'armchair', L: [1.6, 5.4, -1, -16, 1],   P: [-0.6, 7.4, 1, -14], at: 4250, anim: 'pop',  label: ['04', 'Interiors'] },
     { shape: 'lamp',     L: [-2.2, 5.9],             P: null,                at: 4400, anim: 'pop', svc: 'Interiors' },
     { shape: 'plant',    L: [-4.4, 0.8],             P: [-2.0, 1.0],         at: 4500, anim: 'pop' },
@@ -592,8 +588,7 @@
     o.inner = el('g', { 'stroke-width': 0 }, o.g);
     buildShape(o.inner, s);
     o.sg = el('g', {}, $('shadows'));
-    o.sinner = el('g', { fill: '#e6ecf7', stroke: '#e6ecf7', 'stroke-width': 0 }, o.sg);
-    o.contact = o.shape === 'pendants' ? null : el('ellipse', { fill: 'url(#gContact)' }, $('contacts'));
+    o.sinner = el('g', { fill: '#0a1430', stroke: '#0a1430', 'stroke-width': 0 }, o.sg);
     buildShape(o.sinner, s);
     if (o.label) {
       const a = el('a', { href: '#services', class: 'callout', opacity: 0, 'aria-label': o.label[1] }, $('callouts'));
@@ -601,6 +596,7 @@
         a,
         line: el('polyline', { pathLength: 1, 'stroke-dasharray': 1, 'stroke-dashoffset': 1 }, a),
         hit: el('rect', { fill: 'transparent' }, a),
+        chip: el('rect', { class: 'chip', rx: 2, width: 0, height: 0 }, a),
         dot: el('circle', { r: 2.5 }, a),
         text: el('text', {}, a),
       };
@@ -703,16 +699,20 @@
       const tags = [];
       for (const o of OBJECTS) {
         if (!o.cl || o.hidden) { o.plan = null; continue; }
-        const below = TAG[o.shape] !== 'above';
-        const an = P(o.x, below ? 0 : o.h + 0.12, o.z);
-        const L = (o.cl.w || 90) + 4;
-        let cx = clamp(an[0], 10 + L / 2, vw - 10 - L / 2);
-        let ly = below ? an[1] + 26 : an[1] - 16;
-        const box = () => [cx - L / 2, cx + L / 2, ly - 14, ly + 5];
+        const below = true;
+        const an = P(o.x, 0, o.z);
+        const L = (o.cl.w || 90) + 24;                 // chip width incl. padding
+        let cx = clamp(an[0], 12 + L / 2, vw - 12 - L / 2);
+        let ly = an[1] + 30;                           // text baseline; chip spans ly-16 .. ly+8
+        const box = () => [cx - L / 2, cx + L / 2, ly - 16, ly + 8];
         for (let pass = 0; pass < 8; pass++) {
           const b = box(), hit = tags.find(q => b[0] < q[1] + 6 && b[1] + 6 > q[0] && b[2] < q[3] + 6 && b[3] + 6 > q[2]);
           if (!hit) break;
-          ly = below ? hit[3] + 6 + 14 : hit[2] - 6 - 5;
+          // slide sideways (staying under the piece) before dropping a row
+          const left = cx < (hit[0] + hit[1]) / 2;
+          const nx = left ? hit[0] - 6 - L / 2 : hit[1] + 6 + L / 2;
+          if (nx - L / 2 >= 12 && nx + L / 2 <= vw - 12 && Math.abs(nx - an[0]) < L / 2 + 10) cx = nx;
+          else ly = hit[3] + 6 + 16;
         }
         tags.push(box());
         o.plan = { tag: true, below, dx: cx - an[0], dy: ly - an[1] };
@@ -796,6 +796,7 @@
 
   let skipFrame = false;
   function frame(now) {
+    if (collapse > 0.02) { requestAnimationFrame(frame); return; }   // room is covered/scrolled: don't redraw it
     const t = (now - start) * rate;
     if (compact && t > T.end + 1000 && (skipFrame = !skipFrame)) { requestAnimationFrame(frame); return; }
     const ts = now / 1000;
@@ -924,15 +925,8 @@
       o.g.style.display = vis ? '' : 'none';
       // shadow mapping is exact at the floor contact (or at the shade, for hanging lamps), so it meets the piece
       o.sg.setAttribute('transform', affine(o.x, o.z, o.shadowAt || 0, true));
-      if (o.contact) {
-        const hw = FOOT[o.shape], c0 = P(o.x, 0, o.z), cl = P(o.x - hw, 0, o.z), cf = P(o.x, 0, o.z + .35), cb = P(o.x, 0, o.z - .35);
-        o.contact.setAttribute('cx', c0[0].toFixed(1)); o.contact.setAttribute('cy', c0[1].toFixed(1));
-        o.contact.setAttribute('rx', Math.max(1, (c0[0] - cl[0]) * 1.15).toFixed(1));
-        o.contact.setAttribute('ry', Math.max(1, (cf[1] - cb[1]) / 2).toFixed(1));
-        o.contact.style.opacity = vis ? clamp(k * 1.5) : 0;
-      }
       o.sinner.setAttribute('transform', local);
-      o.sg.style.opacity = vis ? lightAmt * clamp(k * 2) : 0;
+      o.sg.style.opacity = vis && !o.noShadow ? 0.14 * lightAmt * clamp(k * 2) : 0;
 
     });
 
@@ -945,19 +939,23 @@
       if (o.plan.tag) {
         const { below, dx, dy } = o.plan;
         const an = P(o.x, below ? 0 : o.h + 0.12, o.z);
-        const L = (o.cl.w || 90) + 4, cx = an[0] + dx, ly = an[1] + dy;
-        const stem = below ? ly - 14 : ly + 5;
-        o.cl.line.setAttribute('points', pts([an, [an[0], stem], [cx, stem]]));
+        const L = (o.cl.w || 90) + 24, cx = an[0] + dx, ly = an[1] + dy;
+        const top = ly - 16, tickX = clamp(an[0], cx - L / 2 + 8, cx + L / 2 - 8);
+        o.cl.chip.setAttribute('x', (cx - L / 2).toFixed(1)); o.cl.chip.setAttribute('y', top.toFixed(1));
+        o.cl.chip.setAttribute('width', L.toFixed(1)); o.cl.chip.setAttribute('height', 24);
+        o.cl.chip.style.opacity = easeOut(prog(t, [o.at + 450, o.at + 900]));
+        o.cl.line.setAttribute('points', pts([[tickX, an[1] + 4], [tickX, top]]));
         o.cl.line.setAttribute('stroke-dashoffset', 1 - easeInOut(kc));
         o.cl.dot.setAttribute('cx', an[0].toFixed(1)); o.cl.dot.setAttribute('cy', an[1].toFixed(1));
-        o.cl.text.setAttribute('x', cx.toFixed(1)); o.cl.text.setAttribute('y', (ly - 1).toFixed(1));
+        o.cl.text.setAttribute('x', cx.toFixed(1)); o.cl.text.setAttribute('y', (ly + 0.5).toFixed(1));
         o.cl.text.setAttribute('text-anchor', 'middle');
         o.cl.hit.setAttribute('x', cx - L / 2 - 8); o.cl.hit.setAttribute('width', L + 16);
-        o.cl.hit.setAttribute('y', ly - 24); o.cl.hit.setAttribute('height', 36);
+        o.cl.hit.setAttribute('y', ly - 22); o.cl.hit.setAttribute('height', 36);
         o.cl.text.style.opacity = easeOut(prog(t, [o.at + 600, o.at + 1000]));
         o.cl.a.setAttribute('opacity', kc > 0 ? 1 : 0);
         continue;
       }
+      o.cl.chip.setAttribute('width', 0);
       const { below, dir, dy } = o.plan;
       const an = P(o.x, below ? -0.04 : o.h + 0.12, o.z);
       const L = (o.cl.w || 90) + 14, ly = an[1] + dy;
@@ -1046,17 +1044,22 @@
   // scrolling collapses the room card as the footer comes up
   const siteFooter = $('site-footer');
   let collapse = 0;
-  const onScroll = () => {
-    collapse = clamp(scrollY / (siteFooter.offsetHeight * .85));
-    const st = document.documentElement.style;
-    st.setProperty('--c', collapse.toFixed(3));
-    // wash: rises from below, fully covers the room mid-way, then wipes off the top; the room stays faded behind the glass
+  const washEl = $('wash'), veilEl = $('veil');
+  let footerH = siteFooter.offsetHeight, scrollQueued = false;
+  addEventListener('resize', () => { footerH = siteFooter.offsetHeight; });
+  // one style write per frame, transforms/opacity only (GPU-composited, no layout or repaint)
+  const applyScroll = () => {
+    scrollQueued = false;
+    collapse = clamp(scrollY / (footerH * .85));
+    hero.style.transform = `translate3d(0, ${(collapse * 2).toFixed(3)}vh, 0) scale(${(1 - collapse * .1).toFixed(4)})`;
+    // wash: rises from below, covers the room mid-way, then wipes off the top; the room stays faded behind the glass
     const w = easeInOut(clamp(collapse / .92));
-    st.setProperty('--wy', (130 - 260 * w).toFixed(2) + '%');
-    st.setProperty('--fade', clamp((w - .45) / .2).toFixed(3));
+    washEl.style.transform = `translate3d(0, ${(130 - 260 * w).toFixed(2)}%, 0)`;
+    veilEl.style.opacity = (clamp((w - .45) / .2) * .9 + collapse * .1).toFixed(3);
   };
+  const onScroll = () => { if (!scrollQueued) { scrollQueued = true; requestAnimationFrame(applyScroll); } };
   addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
+  applyScroll();
   $('toTop').addEventListener('click', e => { e.preventDefault(); scrollTo({ top: 0, behavior: 'smooth' }); });
   $('replay2').addEventListener('click', () => { scrollTo({ top: 0, behavior: 'smooth' }); if (!reduce) { rate = 1; seek(0); } });
   // no long-press menus on touch devices
