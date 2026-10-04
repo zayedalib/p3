@@ -157,7 +157,7 @@
     <polygon id="doorSpill" fill="#1f5cff" opacity="0"/>
     <clipPath id="clipDoor"><polygon id="doorClipPoly"/></clipPath>
     <polygon id="doorLeaf" clip-path="url(#clipDoor)" fill="#0a1430" stroke="#1f5cff" stroke-width="1.5" stroke-linejoin="round"/>
-    <polygon id="doorFrame" fill="none" stroke="#1f5cff" stroke-width="1.5"/>
+    <polygon id="doorFrame" fill="none" stroke="#1f5cff" stroke-width="1.5" pathLength="1" stroke-dasharray="1"/>
   </g>
 
   <g clip-path="url(#clipFloor)">
@@ -238,11 +238,12 @@
 
   // ---------- Timeline (ms) ----------
   const T = {
-    edges: [0, 900], faces: [200, 1000], cam: [150, 2900], reflect: [700, 2300], logo: [2300, 3100],
-    outline: [2500, 3200], fill: [2950, 3750], sun: [3300, 5400], light: [3700, 5600],
-    bandA: [3500, 4400], bandB: [3850, 4800],
-    wallFlash: [4700, 5000], wallOpen: [4850, 5950], menu: 5500,
-    door: [6900, 7450], cta: 7450, end: 8300,
+    // phases overlap so the build reads as one continuous move
+    edges: [0, 700], faces: [100, 800], cam: [100, 2100], reflect: [500, 1700], logo: [1500, 2250],
+    outline: [1300, 1950], fill: [1600, 2300], sun: [1900, 3700], light: [2100, 3700],
+    bandA: [2300, 3000], bandB: [2500, 3250],
+    wallFlash: [2900, 3150], wallOpen: [3000, 3900], menu: 3500,
+    door: [4600, 5300], cta: 5100, end: 5800,
   };
 
   // ---------- easing ----------
@@ -397,13 +398,13 @@
   // Placement per layout — L: landscape, P: portrait (null = not shown) — as
   // [x, z, label direction, label rise px (negative = label hangs below the piece), mirrored].
   const OBJECTS = [
-    { shape: 'ladder',   L: [-3.7, 1.2, -1, 20],     P: [-3.4, 2.8, 1, 20],  at: 5300, anim: 'drop', label: ['01', 'Extensions'] },
-    { shape: 'island',   L: [0.4, 2.8, -1, 20],      P: [0.6, 4.5, 1, 40],   at: 5900, anim: 'pop',  label: ['02', 'Kitchens'] },
-    { shape: 'tub',      L: [3.7, 1.0, -1, 20],      P: [1.1, 7.8, -1, -30], at: 6150, anim: 'pop',  label: ['03', 'Bathrooms'] },
-    { shape: 'pendants', L: [0.4, 2.8],              P: [0.6, 4.5],          at: 6300, anim: 'drop', dropFrom: 4, noShadow: 1 },
-    { shape: 'armchair', L: [1.6, 5.4, -1, 20, 1],   P: [-0.8, 7.8, 1, -10], at: 6400, anim: 'pop',  label: ['04', 'Interiors'] },
-    { shape: 'lamp',     L: [-2.2, 5.9],             P: null,                at: 6600, anim: 'pop' },
-    { shape: 'plant',    L: [-4.4, 0.8],             P: [3.6, 2.6],          at: 6750, anim: 'pop' },
+    { shape: 'ladder',   L: [-3.7, 1.2, -1, 20],     P: [-3.4, 2.8, 1, 20],  at: 3400, anim: 'drop', label: ['01', 'Extensions'] },
+    { shape: 'island',   L: [0.4, 2.8, -1, 20],      P: [0.6, 4.5, 1, 40],   at: 3800, anim: 'pop',  label: ['02', 'Kitchens'] },
+    { shape: 'tub',      L: [3.7, 1.0, -1, 20],      P: [1.1, 7.8, -1, -30], at: 4000, anim: 'pop',  label: ['03', 'Bathrooms'] },
+    { shape: 'pendants', L: [0.4, 2.8],              P: [0.6, 4.5],          at: 4150, anim: 'drop', dropFrom: 4, noShadow: 1 },
+    { shape: 'armchair', L: [1.6, 5.4, -1, 20, 1],   P: [-0.8, 7.8, 1, -10], at: 4250, anim: 'pop',  label: ['04', 'Interiors'] },
+    { shape: 'lamp',     L: [-2.2, 5.9],             P: null,                at: 4400, anim: 'pop' },
+    { shape: 'plant',    L: [-4.4, 0.8],             P: [3.6, 2.6],          at: 4500, anim: 'pop' },
   ];
   const buildShape = (parent, s) => {
     for (const [d, sw, stroked] of s.d) {
@@ -640,10 +641,11 @@
     $('doorLeaf').setAttribute('points', poly([ex, 0, ez], [ex, DOOR.h, ez], [X, DOOR.h, DOOR.z1], [X, 0, DOOR.z1]));
     $('doorSpill').setAttribute('points', poly([X, 0, DOOR.z0], [X, 0, DOOR.z1], [X + 2.2, 0, DOOR.z1 + 0.6], [X + 2.2, 0, DOOR.z0 - 0.3]));
     $('doorSpill').style.opacity = 0.14 * doorOpen;
-    // flicker: white, navy, white, settle
-    const flick = pd <= 0 ? null : pd < .18 ? '#ffffff' : pd < .34 ? '#0a1430' : pd < .5 ? '#ffffff' : '#0a1430';
-    $('door').setAttribute('opacity', flick ? 1 : 0);
-    if (flick) $('doorLeaf').setAttribute('fill', flick);
+    // frame draws itself, then the door fades in behind it
+    $('door').setAttribute('opacity', pd > 0 ? 1 : 0);
+    $('doorFrame').setAttribute('stroke-dashoffset', 1 - easeInOut(clamp(pd * 1.6)));
+    const dIn = easeOut(clamp(pd * 1.6 - .6));
+    $('doorLeaf').style.opacity = dIn; $('doorway').style.opacity = dIn;
     $('cta').classList.toggle('open', doorOpen > .5);
     if (!compact) {
       const dp = P(X, 0.35, DOOR.z1);
