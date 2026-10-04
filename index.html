@@ -110,6 +110,8 @@
     content: ""; position: absolute; left: 0; top: -1px; height: 2px; width: 100%;
     background: var(--blue); transform: scaleX(var(--prog, 0)); transform-origin: left;
   }
+  footer .links { display: flex; gap: 22px; align-items: center; }
+  footer a.alt { color: var(--blue); text-decoration: none; }
   #replay { background: none; border: 0; color: var(--blue); font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; display: flex; gap: 8px; align-items: center; }
   #replay svg { width: 13px; height: 13px; }
 
@@ -216,10 +218,13 @@
 
   <footer class="bar">
     <span>© Four40 Renovations</span>
+    <span class="links">
+    <a class="alt" href="3d/">3D version</a>
     <button id="replay" type="button" aria-label="Replay intro animation">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
       Replay
     </button>
+    </span>
   </footer>
 </div>
 
